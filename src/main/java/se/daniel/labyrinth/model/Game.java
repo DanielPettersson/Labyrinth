@@ -1,12 +1,11 @@
 package se.daniel.labyrinth.model;
 
 
-import lombok.Getter;
+import lombok.Value;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.UUID;
 
-@Getter
+@Value
 public class Game {
-    private final List<Message> messages = new ArrayList<>();
+    UUID uuid;
 }

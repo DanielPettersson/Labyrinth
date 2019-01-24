@@ -1,13 +1,19 @@
 package se.daniel.labyrinth.service;
 
 import se.daniel.labyrinth.model.Game;
+import se.daniel.labyrinth.model.GameRequest;
 
-import java.util.Optional;
+import java.util.List;
 
 public interface GameService {
 
-    Optional<Game> getGame(String id);
+    GameRequest createGameRequest();
 
-    String createGame();
+    List<GameRequest> getGameRequests();
+
+    List<GameRequest> removeTimedOutGameRequests();
+
+    Game startGame(String uuid);
+
 
 }
