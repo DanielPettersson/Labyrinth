@@ -30,7 +30,6 @@ createButton.onclick = function(ev) {
         var uuid = JSON.parse(message.body).uuid;
         gameArea.innerText = 'Wating for game to start...';
 
-        stompClient.send('/app/game-request-added', {}, {});
         stompClient.subscribe('/topic/game-started/' + uuid, function (m) {
             gameStart(uuid);
         });

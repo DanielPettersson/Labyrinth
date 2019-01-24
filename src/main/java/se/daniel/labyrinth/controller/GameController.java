@@ -30,13 +30,9 @@ public class GameController {
     @MessageMapping("/create-game-request")
     @SendToUser("/topic/game-request-created")
     public GameRequest createGameRequest() {
-        return gameService.createGameRequest();
-    }
-
-    @MessageMapping("/game-request-added")
-    @SendTo(TOPIC_GAME_REQUESTS)
-    public List<GameRequest> gameRequestsAdded() {
-        return gameService.getGameRequests();
+        final GameRequest gameRequest = gameService.createGameRequest();
+        updateGameRequests();
+        return gameRequest;
     }
 
     @MessageMapping("/get-game-requests")
@@ -48,7 +44,9 @@ public class GameController {
     @MessageMapping("/start-game/{gameId}")
     @SendTo("/topic/game-started/{gameId}")
     public Game startGame(@DestinationVariable String gameId) {
-        return gameService.startGame(gameId);
+        final Game game = gameService.startGame(gameId);
+        updateGameRequests();
+        return game;
     }
 
     @Scheduled(fixedRate = 2000)
@@ -57,6 +55,10 @@ public class GameController {
         gameService.removeTimedOutGameRequests()
                 .forEach(removedGameRequest -> messagingTemplate.convertAndSend("/topic/game-aborted/" + removedGameRequest.getUuid(), ""));
 
+        updateGameRequests();
+    }
+
+    private void updateGameRequests() {
         messagingTemplate.convertAndSend(TOPIC_GAME_REQUESTS, gameService.getGameRequests());
     }
 
