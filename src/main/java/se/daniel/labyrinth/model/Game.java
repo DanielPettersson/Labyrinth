@@ -8,4 +8,5 @@ import java.util.UUID;
 @Value
 public class Game {
     UUID uuid;
+    Labyrinth labyrinth;
 }

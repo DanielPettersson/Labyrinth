@@ -4,6 +4,7 @@ import lombok.Getter;
 import org.springframework.stereotype.Service;
 import se.daniel.labyrinth.model.Game;
 import se.daniel.labyrinth.model.GameRequest;
+import se.daniel.labyrinth.model.LabyrinthBuilder;
 import se.daniel.labyrinth.service.GameService;
 
 import java.time.Duration;
@@ -42,7 +43,10 @@ public class GameServiceImpl implements GameService {
     @Override
     public Game startGame(String uuid) {
         gameRequests.remove(new GameRequest(UUID.fromString(uuid)));
-        return new Game(UUID.fromString(uuid));
+        return new Game(
+                UUID.fromString(uuid),
+                new LabyrinthBuilder(new Random()).build(10)
+        );
     }
 
 }

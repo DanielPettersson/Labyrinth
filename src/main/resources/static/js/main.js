@@ -4,6 +4,9 @@ var joinButton = document.getElementById('joinButton');
 var gameRequests = document.getElementById('gameRequests');
 var gameArea = document.getElementById('gameArea');
 
+var userGameRequestsSubscription;
+var gameRequestsSubscription;
+
 function connect() {
 
     var socket = new SockJS('/game');
@@ -17,8 +20,9 @@ function connect() {
     });
 }
 
-function gameStart(gameId) {
-    gameArea.innerText = 'Game on ' + gameId;
+function gameStart(game) {
+    gameArea.innerText = 'Game on ' + game.uuid;
+    console.log(game.labyrinth);
 }
 
 createButton.onclick = function(ev) {
@@ -26,14 +30,17 @@ createButton.onclick = function(ev) {
     createButton.style.display = 'none';
     joinButton.style.display = 'none';
 
-    stompClient.subscribe('/user/topic/game-request-created', function (message) {
+    var gameRequestCreatedSubscription = stompClient.subscribe('/user/topic/game-request-created', function (message) {
+        gameRequestCreatedSubscription.unsubscribe();
         var uuid = JSON.parse(message.body).uuid;
         gameArea.innerText = 'Wating for game to start...';
 
-        stompClient.subscribe('/topic/game-started/' + uuid, function (m) {
-            gameStart(uuid);
+        var gameStartedSubscription = stompClient.subscribe('/topic/game-started/' + uuid, function (m) {
+            gameStartedSubscription.unsubscribe();
+            gameStart(JSON.parse(m.body));
         });
-        stompClient.subscribe('/topic/game-aborted/' + uuid, function (m) {
+        var gameAbortedSubscription = stompClient.subscribe('/topic/game-aborted/' + uuid, function (m) {
+            gameStartedSubscription.unsubscribe();
             gameArea.innerText = '';
             createButton.style.display = 'inline';
             joinButton.style.display = 'inline';
@@ -43,12 +50,15 @@ createButton.onclick = function(ev) {
 
 };
 
-
 gameRequests.onclick = function (ev) {
+    userGameRequestsSubscription.unsubscribe();
+    gameRequestsSubscription.unsubscribe();
+
     gameRequests.style.display = 'none';
     var gameId = ev.target.innerText;
-    stompClient.subscribe('/topic/game-started/' + gameId, function (message) {
-        gameStart(gameId);
+    var gameStartedSubscription = stompClient.subscribe('/topic/game-started/' + gameId, function (message) {
+        gameStartedSubscription.unsubscribe();
+        gameStart(JSON.parse(message.body));
     });
     stompClient.send('/app/start-game/' + gameId, {}, {});
 };
@@ -71,8 +81,8 @@ joinButton.onclick = function(ev) {
 
     };
 
-    stompClient.subscribe('/user/topic/game-requests', handleGameRequests);
-    stompClient.subscribe('/topic/game-requests', handleGameRequests);
+    userGameRequestsSubscription = stompClient.subscribe('/user/topic/game-requests', handleGameRequests);
+    gameRequestsSubscription = stompClient.subscribe('/topic/game-requests', handleGameRequests);
     stompClient.send('/app/get-game-requests', {}, {});
 
 };

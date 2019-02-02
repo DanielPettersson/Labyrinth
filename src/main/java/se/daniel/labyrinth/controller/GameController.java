@@ -53,7 +53,12 @@ public class GameController {
     public void removeOldRequests() {
 
         gameService.removeTimedOutGameRequests()
-                .forEach(removedGameRequest -> messagingTemplate.convertAndSend("/topic/game-aborted/" + removedGameRequest.getUuid(), ""));
+                .forEach(
+                        removedGameRequest -> messagingTemplate.convertAndSend(
+                                "/topic/game-aborted/" + removedGameRequest.getUuid(),
+                                ""
+                        )
+                );
 
         updateGameRequests();
     }
