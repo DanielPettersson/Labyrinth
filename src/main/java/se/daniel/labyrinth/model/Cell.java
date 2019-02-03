@@ -1,19 +1,17 @@
 package se.daniel.labyrinth.model;
 
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
-
-import java.util.UUID;
+import lombok.Setter;
 
 @Getter
-@EqualsAndHashCode(of = {"uuid"})
+@Setter
 class Cell {
 
-    private final UUID uuid;
+    private boolean visited;
     private final boolean[] walls;
 
     Cell() {
-        uuid = UUID.randomUUID();
+        visited = false;
         walls = new boolean[] {true, true, true, true};
     }
 

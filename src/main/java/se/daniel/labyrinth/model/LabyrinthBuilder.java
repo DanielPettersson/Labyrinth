@@ -3,19 +3,20 @@ package se.daniel.labyrinth.model;
 import lombok.RequiredArgsConstructor;
 
 import java.util.*;
-import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 @RequiredArgsConstructor
 public class LabyrinthBuilder {
 
     private final Random random;
 
-    private Set<Cell> visitedCells;
+    private Set<Location> visitedLocations;
     private Labyrinth labyrinth;
 
     public Labyrinth build(final int size) {
 
-        visitedCells = new HashSet<>();
+        visitedLocations = new HashSet<>();
         labyrinth = new Labyrinth(size);
 
         final Location startLocation = new Location(random.nextInt(size), random.nextInt(size));
@@ -26,10 +27,16 @@ public class LabyrinthBuilder {
 
     private void visitCell(final Location originLocation, Location location) {
 
+        // Already visited, abort
+
+        if (visitedLocations.contains(location)) {
+            return;
+        }
+
         var originCell = labyrinth.getCell(originLocation);
         var cell = labyrinth.getCell(location);
 
-        visitedCells.add(cell);
+        visitedLocations.add(location);
 
         // Break down walls
 
@@ -63,15 +70,13 @@ public class LabyrinthBuilder {
         destinations.add(new Location(location.getX() - 1, location.getY()));
         Collections.shuffle(destinations, random);
 
-        final List<Location> filter1 = destinations.stream()
+        return destinations
+                .stream()
                 .filter(
                         l -> l.getX() >= 0 && l.getX() < labyrinth.getSize() && l.getY() >= 0 && l.getY() < labyrinth.getSize()
-                ).collect(Collectors.toList());
-        final List<Location> filter2 = filter1.stream().filter(
-                l -> !visitedCells.contains(labyrinth.getCell(l))
-        ).collect(Collectors.toList());
+                )
+                .collect(toList());
 
-        return filter2;
     }
 
 }

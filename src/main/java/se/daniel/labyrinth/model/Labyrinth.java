@@ -26,7 +26,7 @@ class Labyrinth {
     }
 
     Cell getCell(final Location location) {
-        return cells.get(location.getY()).get(location.getY());
+        return cells.get(location.getY()).get(location.getX());
     }
 
 }

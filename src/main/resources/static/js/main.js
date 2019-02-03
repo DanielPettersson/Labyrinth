@@ -20,11 +20,6 @@ function connect() {
     });
 }
 
-function gameStart(game) {
-    gameArea.innerText = 'Game on ' + game.uuid;
-    console.log(game.labyrinth);
-}
-
 createButton.onclick = function(ev) {
 
     createButton.style.display = 'none';
