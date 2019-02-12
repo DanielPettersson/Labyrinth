@@ -10,6 +10,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
 import se.daniel.labyrinth.model.Game;
 import se.daniel.labyrinth.model.GameRequest;
+import se.daniel.labyrinth.model.JoinGameRequest;
+import se.daniel.labyrinth.model.PublicGameRequest;
 import se.daniel.labyrinth.service.GameService;
 
 import java.util.List;
@@ -37,8 +39,14 @@ public class GameController {
 
     @MessageMapping("/get-game-requests")
     @SendToUser(TOPIC_GAME_REQUESTS)
-    public List<GameRequest> getGameRequests() {
+    public List<PublicGameRequest> getGameRequests() {
         return gameService.getGameRequests();
+    }
+
+    @MessageMapping("/join-game-request/{gameId}")
+    @SendToUser("/topic/game-request-joined")
+    public JoinGameRequest joinGameRequest(@DestinationVariable String gameId) {
+        return gameService.joinGame(gameId);
     }
 
     @MessageMapping("/start-game/{gameId}")
@@ -55,7 +63,7 @@ public class GameController {
         gameService.removeTimedOutGameRequests()
                 .forEach(
                         removedGameRequest -> messagingTemplate.convertAndSend(
-                                "/topic/game-aborted/" + removedGameRequest.getUuid(),
+                                "/topic/game-aborted/" + removedGameRequest.getGameUuid(),
                                 ""
                         )
                 );

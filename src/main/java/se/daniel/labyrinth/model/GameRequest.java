@@ -5,21 +5,28 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
-@EqualsAndHashCode(of = {"uuid"})
+@EqualsAndHashCode(of = {"gameUuid"})
 public class GameRequest {
 
-    LocalDateTime creationDate;
-    UUID uuid;
+    private final LocalDateTime creationDate;
+    private final UUID gameUuid;
+    private final List<UUID> playerUuids = new ArrayList<>();
 
     public GameRequest() {
-        this(UUID.randomUUID());
-    }
-
-    public GameRequest(UUID uuid) {
-        this.uuid = uuid;
+        this.gameUuid = UUID.randomUUID();
+        this.playerUuids.add(UUID.randomUUID());
         this.creationDate = LocalDateTime.now();
     }
+
+    public UUID addPlayer() {
+        final UUID uuid = UUID.randomUUID();
+        playerUuids.add(uuid);
+        return uuid;
+    }
+
 }

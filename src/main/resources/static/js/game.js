@@ -1,4 +1,5 @@
-function gameStart(game) {
+function gameStart(game, playerUuid) {
+
     gameArea.innerText = '';
 
     var WIDTH = window.innerWidth;
