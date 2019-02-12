@@ -29,4 +29,40 @@ class Labyrinth {
         return cells.get(location.getY()).get(location.getX());
     }
 
+    boolean isValidMove(Location from, Location to) {
+
+        if (to.getX() < 0 || to.getY() < 0 || to.getX() >= size || to.getY() >= size) {
+            return false;
+        }
+
+        final int directionIndex = getDirectionIndex(from, to);
+
+        return !getCell(from).getWalls()[directionIndex];
+    }
+
+    private int getDirectionIndex(Location from, Location to) {
+
+        var dx = to.getX() - from.getX();
+
+        if (dx == 1) {
+            return 1;
+        }
+
+        if (dx == -1) {
+            return 3;
+        }
+
+        var dy = to.getY() - from.getY();
+
+        if (dy == -1) {
+            return 0;
+        }
+
+        if (dy == 1) {
+            return 2;
+        }
+
+        throw new IllegalArgumentException("Invalid move");
+    }
+
 }

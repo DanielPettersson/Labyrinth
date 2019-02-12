@@ -78,6 +78,7 @@ public class GameServiceImpl implements GameService {
             game.getPlayers()
                     .stream()
                     .filter(p -> playerId.equals(p.getUuid()))
+                    .filter(p -> game.isValidMove(p, move))
                     .forEach(p -> p.setLocation(p.getLocation().add(move)));
         }
 
