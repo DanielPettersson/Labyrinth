@@ -1,11 +1,9 @@
 package se.daniel.labyrinth.service;
 
-import se.daniel.labyrinth.model.Game;
-import se.daniel.labyrinth.model.GameRequest;
-import se.daniel.labyrinth.model.JoinGameRequest;
-import se.daniel.labyrinth.model.PublicGameRequest;
+import se.daniel.labyrinth.model.*;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface GameService {
 
@@ -15,9 +13,9 @@ public interface GameService {
 
     List<GameRequest> removeTimedOutGameRequests();
 
-    JoinGameRequest joinGame(String uuid);
+    JoinGameRequest joinGame(UUID uuid);
 
-    Game startGame(String uuid);
+    Game startGame(UUID uuid);
 
-
+    List<Player> movePlayer(UUID gameId, UUID playerId, Location move);
 }

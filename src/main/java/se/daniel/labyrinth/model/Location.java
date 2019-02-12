@@ -7,7 +7,12 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 @EqualsAndHashCode
-class Location {
+public class Location {
     private final int x;
     private final int y;
+
+    public Location add(Location add) {
+        return new Location(x + add.x, y + add.y);
+    }
+
 }

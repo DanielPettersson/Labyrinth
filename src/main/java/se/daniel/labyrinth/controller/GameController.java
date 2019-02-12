@@ -8,13 +8,11 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
-import se.daniel.labyrinth.model.Game;
-import se.daniel.labyrinth.model.GameRequest;
-import se.daniel.labyrinth.model.JoinGameRequest;
-import se.daniel.labyrinth.model.PublicGameRequest;
+import se.daniel.labyrinth.model.*;
 import se.daniel.labyrinth.service.GameService;
 
 import java.util.List;
+import java.util.UUID;
 
 @Controller
 public class GameController {
@@ -46,15 +44,24 @@ public class GameController {
     @MessageMapping("/join-game-request/{gameId}")
     @SendToUser("/topic/game-request-joined")
     public JoinGameRequest joinGameRequest(@DestinationVariable String gameId) {
-        return gameService.joinGame(gameId);
+        return gameService.joinGame(UUID.fromString(gameId));
     }
 
     @MessageMapping("/start-game/{gameId}")
     @SendTo("/topic/game-started/{gameId}")
     public Game startGame(@DestinationVariable String gameId) {
-        final Game game = gameService.startGame(gameId);
+        final Game game = gameService.startGame(UUID.fromString(gameId));
         updateGameRequests();
         return game;
+    }
+
+    @MessageMapping("/move-player/{gameId}/{playerId}")
+    @SendTo("/topic/player-moved/{gameId}")
+    public List<Player> movePlayer(
+            @DestinationVariable String gameId,
+            @DestinationVariable String playerId,
+            Location move) {
+        return gameService.movePlayer(UUID.fromString(gameId), UUID.fromString(playerId), move);
     }
 
     @Scheduled(fixedRate = 2000)

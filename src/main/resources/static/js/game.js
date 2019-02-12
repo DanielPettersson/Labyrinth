@@ -13,6 +13,7 @@ function gameStart(game, playerUuid) {
     window.addEventListener( 'resize', onWindowResize, false );
 
     var labyrinthSize = game.labyrinth.size;
+    var halfLabyrinthSize = labyrinthSize / 2;
 
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
@@ -21,8 +22,6 @@ function gameStart(game, playerUuid) {
     var renderer = new THREE.WebGLRenderer();
     renderer.setSize( window.innerWidth, window.innerHeight );
     document.body.appendChild( renderer.domElement );
-
-
 
     var light1 = new THREE.PointLight( 0xffffff, 1, 100 );
     light1.position.set( labyrinthSize, labyrinthSize, labyrinthSize );
@@ -33,6 +32,38 @@ function gameStart(game, playerUuid) {
     scene.add( light2 );
 
     createLabyrinthModel();
+
+    var player1 = createPlayer(game.players[0]);
+    var player2 = createPlayer(game.players[1]);
+    positionPlayers(game.players);
+
+    stompClient.subscribe('/topic/player-moved/' + game.uuid, function (message) {
+        positionPlayers(JSON.parse(message.body));
+    });
+
+    document.addEventListener('keyup', function(keyEvent) {
+
+        var move;
+
+        switch (keyEvent.key) {
+            case 'ArrowUp':
+                move = { x: 0, y: 1};
+                break;
+            case 'ArrowDown':
+                move = { x: 0, y: -1};
+                break;
+            case 'ArrowLeft':
+                move = { x: -1, y: 0};
+                break;
+            case 'ArrowRight':
+                move = { x: 1, y: 0};
+        }
+
+        if (move) {
+            stompClient.send('/app/move-player/' + game.uuid + '/' + playerUuid, {}, JSON.stringify(move));
+        }
+
+    });
 
     function animate() {
         requestAnimationFrame( animate );
@@ -46,8 +77,6 @@ function gameStart(game, playerUuid) {
     animate();
 
     function createLabyrinthModel() {
-
-        var halfLabyrinthSize = labyrinthSize / 2;
 
         var labyrinthPlaneMaterial = new THREE.MeshLambertMaterial( { color: 0x006666 } );
         var labyrinthWallMaterial = new THREE.MeshLambertMaterial( { color: 0xFFFF00 } );
@@ -90,7 +119,21 @@ function gameStart(game, playerUuid) {
 
             }
         }
+    }
 
+    function createPlayer(playerData) {
+        var player = new THREE.Mesh( new THREE.SphereBufferGeometry(0.4, 20, 20), new THREE.MeshLambertMaterial( { color: 0xFF0000 } ) );
+        scene.add(player);
+        return player;
+    }
+
+    function positionPlayers(playersData) {
+        positionPlayer(player1, playersData[0]);
+        positionPlayer(player2, playersData[1]);
+    }
+
+    function positionPlayer(player, playerData) {
+        player.position.set(-halfLabyrinthSize + playerData.location.x + 0.5, -halfLabyrinthSize + playerData.location.y + 0.5, 0.2);
     }
 
     function onDocumentMouseMove( event ) {
