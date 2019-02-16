@@ -20,7 +20,7 @@ function gameStart(game, gameInfo) {
     var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
     camera.position.z = labyrinthSize * 1.2;
 
-    var renderer = new THREE.WebGLRenderer();
+    var renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize( window.innerWidth, window.innerHeight );
     renderer.setClearColor(colors[gameInfo.playerIndex], 1);
     document.body.appendChild( renderer.domElement );
@@ -56,6 +56,11 @@ function gameStart(game, gameInfo) {
         camera.position.x += ( - mouseX - camera.position.x ) * .05;
         camera.position.y += ( - mouseY - camera.position.y ) * .05;
         camera.lookAt( scene.position );
+
+        players.forEach(function(player) {
+           var move = player.targetPosition.clone().sub(player.position).multiplyScalar(0.12);
+           player.position.copy(player.position.add(move));
+        });
 
         renderer.render( scene, camera );
     }
@@ -114,6 +119,8 @@ function gameStart(game, gameInfo) {
 
     function createPlayer(playerIndex, playerData) {
         var player = new THREE.Mesh( new THREE.SphereBufferGeometry(0.4, 20, 20), new THREE.MeshLambertMaterial( { color: colors[playerIndex] } ) );
+        player.targetPosition = new THREE.Vector3();
+        player.position.set(0, 0, labyrinthSize);
         scene.add(player);
         return player;
     }
@@ -123,7 +130,7 @@ function gameStart(game, gameInfo) {
     }
 
     function positionPlayer(player, playerData) {
-        player.position.set(-halfLabyrinthSize + playerData.location.x + 0.5, -halfLabyrinthSize + playerData.location.y + 0.5, 0.2);
+        player.targetPosition.set(-halfLabyrinthSize + playerData.location.x + 0.5, -halfLabyrinthSize + playerData.location.y + 0.5, 0.2);
     }
 
     function onDocumentMouseMove( event ) {
