@@ -17,6 +17,16 @@ public class Game {
     public boolean isValidMove(Player player, Location move) {
         final Location from = player.getLocation();
         final Location to = from.add(move);
-        return labyrinth.isValidMove(from, to);
+
+        // Check labyrinth constraints
+
+        if (!labyrinth.isValidMove(from, to)) {
+            return false;
+        }
+
+        // Check collision with other players
+
+        return players.stream().noneMatch(p -> p.getLocation().equals(to));
+
     }
 }

@@ -31,12 +31,15 @@ class Labyrinth {
 
     boolean isValidMove(Location from, Location to) {
 
+        // Do not move outside of labyrinth
+
         if (to.getX() < 0 || to.getY() < 0 || to.getX() >= size || to.getY() >= size) {
             return false;
         }
 
-        final int directionIndex = getDirectionIndex(from, to);
+        // Do not move through walls
 
+        final int directionIndex = getDirectionIndex(from, to);
         return !getCell(from).getWalls()[directionIndex];
     }
 
