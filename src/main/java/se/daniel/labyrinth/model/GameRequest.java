@@ -19,7 +19,6 @@ public class GameRequest {
 
     public GameRequest() {
         this.gameUuid = UUID.randomUUID();
-        this.playerUuids.add(UUID.randomUUID());
         this.creationDate = LocalDateTime.now();
     }
 

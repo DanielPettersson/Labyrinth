@@ -21,10 +21,11 @@ public class GameServiceImpl implements GameService {
     private final Map<UUID, GameRequest> gameRequests = new LinkedHashMap<>();
 
     @Override
-    public GameRequest createGameRequest() {
+    public PlayerInfo createGameRequest() {
         final GameRequest gameRequest = new GameRequest();
         gameRequests.put(gameRequest.getGameUuid(), gameRequest);
-        return gameRequest;
+        final UUID playerUuid = gameRequest.addPlayer();
+        return new PlayerInfo(gameRequest.getGameUuid(), playerUuid, 0);
     }
 
     public List<PublicGameRequest> getGameRequests() {
@@ -45,10 +46,10 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public JoinGameRequest joinGame(UUID uuid) {
+    public PlayerInfo joinGameRequest(UUID uuid) {
         final GameRequest gameRequest = gameRequests.get(uuid);
-        final UUID newUuid = gameRequest.addPlayer();
-        return new JoinGameRequest(newUuid);
+        final UUID playerUuid = gameRequest.addPlayer();
+        return new PlayerInfo(uuid, playerUuid, gameRequest.getPlayerUuids().size() - 1);
     }
 
     @Override

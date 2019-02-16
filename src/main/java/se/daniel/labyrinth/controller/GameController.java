@@ -29,10 +29,10 @@ public class GameController {
 
     @MessageMapping("/create-game-request")
     @SendToUser("/topic/game-request-created")
-    public GameRequest createGameRequest() {
-        final GameRequest gameRequest = gameService.createGameRequest();
+    public PlayerInfo createGameRequest() {
+        final var playerInfo = gameService.createGameRequest();
         updateGameRequests();
-        return gameRequest;
+        return playerInfo;
     }
 
     @MessageMapping("/get-game-requests")
@@ -43,8 +43,8 @@ public class GameController {
 
     @MessageMapping("/join-game-request/{gameId}")
     @SendToUser("/topic/game-request-joined")
-    public JoinGameRequest joinGameRequest(@DestinationVariable String gameId) {
-        return gameService.joinGame(UUID.fromString(gameId));
+    public PlayerInfo joinGameRequest(@DestinationVariable String gameId) {
+        return gameService.joinGameRequest(UUID.fromString(gameId));
     }
 
     @MessageMapping("/start-game/{gameId}")

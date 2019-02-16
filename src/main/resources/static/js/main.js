@@ -27,16 +27,14 @@ createButton.onclick = function(ev) {
 
     var gameRequestCreatedSubscription = stompClient.subscribe('/user/topic/game-request-created', function (message) {
         gameRequestCreatedSubscription.unsubscribe();
-        var messageBody = JSON.parse(message.body);
-        var gameUuid = messageBody.gameUuid;
-        var playerUuid = messageBody.playerUuids[0];
+        var gameInfo = JSON.parse(message.body);
         gameArea.innerText = 'Wating for game to start...';
 
-        var gameStartedSubscription = stompClient.subscribe('/topic/game-started/' + gameUuid, function (m) {
+        var gameStartedSubscription = stompClient.subscribe('/topic/game-started/' + gameInfo.gameUuid, function (m) {
             gameStartedSubscription.unsubscribe();
-            gameStart(JSON.parse(m.body), playerUuid);
+            gameStart(JSON.parse(m.body), gameInfo);
         });
-        var gameAbortedSubscription = stompClient.subscribe('/topic/game-aborted/' + gameUuid, function (m) {
+        var gameAbortedSubscription = stompClient.subscribe('/topic/game-aborted/' + gameInfo.gameUuid, function (m) {
             gameStartedSubscription.unsubscribe();
             gameArea.innerText = '';
             createButton.style.display = 'inline';
@@ -57,11 +55,11 @@ gameRequests.onclick = function (ev) {
 
     var gameRequestJoinedSubscription = stompClient.subscribe('/user/topic/game-request-joined', function (message) {
         gameRequestJoinedSubscription.unsubscribe();
-        var playerUuid = JSON.parse(message.body).playerUuid;
+        var gameInfo = JSON.parse(message.body);
 
         var gameStartedSubscription = stompClient.subscribe('/topic/game-started/' + gameId, function (message) {
             gameStartedSubscription.unsubscribe();
-            gameStart(JSON.parse(message.body), playerUuid);
+            gameStart(JSON.parse(message.body), gameInfo);
         });
         stompClient.send('/app/start-game/' + gameId, {}, {});
 

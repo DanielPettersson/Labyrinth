@@ -7,13 +7,13 @@ import java.util.UUID;
 
 public interface GameService {
 
-    GameRequest createGameRequest();
+    PlayerInfo createGameRequest();
 
     List<PublicGameRequest> getGameRequests();
 
     List<GameRequest> removeTimedOutGameRequests();
 
-    JoinGameRequest joinGame(UUID uuid);
+    PlayerInfo joinGameRequest(UUID uuid);
 
     Game startGame(UUID uuid);
 

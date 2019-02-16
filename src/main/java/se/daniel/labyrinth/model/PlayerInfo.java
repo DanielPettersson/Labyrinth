@@ -7,6 +7,9 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
-public class JoinGameRequest {
+public class PlayerInfo {
+
+    private final UUID gameUuid;
     private final UUID playerUuid;
+    private final int playerIndex;
 }
