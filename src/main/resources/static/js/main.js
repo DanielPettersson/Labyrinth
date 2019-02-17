@@ -24,6 +24,7 @@ createButton.onclick = function(ev) {
 
     createButton.style.display = 'none';
     joinButton.style.display = 'none';
+    if (USER_IS_TOUCH) gameArea.requestFullscreen();
 
     var gameRequestCreatedSubscription = stompClient.subscribe('/user/topic/game-request-created', function (message) {
         gameRequestCreatedSubscription.unsubscribe();
@@ -50,6 +51,7 @@ gameRequests.onclick = function (ev) {
     gameRequestsSubscription.unsubscribe();
 
     gameRequests.style.display = 'none';
+    if (USER_IS_TOUCH) gameArea.requestFullscreen();
 
     var gameId = ev.target.innerText;
 
@@ -91,5 +93,19 @@ joinButton.onclick = function(ev) {
     stompClient.send('/app/get-game-requests', {}, {});
 
 };
+
+// Check if user is on a touch device
+
+USER_IS_TOUCH = false;
+window.addEventListener('touchstart', function onFirstTouch() {
+    USER_IS_TOUCH = true;
+    window.removeEventListener('touchstart', onFirstTouch, false);
+});
+
+// Fullscreen polyfill
+
+if (!Element.prototype.requestFullscreen) {
+    Element.prototype.requestFullscreen = Element.prototype.mozRequestFullscreen || Element.prototype.webkitRequestFullscreen || Element.prototype.msRequestFullscreen;
+}
 
 connect();
