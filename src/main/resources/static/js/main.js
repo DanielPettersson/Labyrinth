@@ -1,11 +1,7 @@
 var stompClient;
-var createButton = document.getElementById('createButton');
 var joinButton = document.getElementById('joinButton');
-var gameRequests = document.getElementById('gameRequests');
 var gameArea = document.getElementById('gameArea');
-
-var userGameRequestsSubscription;
-var gameRequestsSubscription;
+var numPlayersSelect = document.getElementById('numPlayers');
 
 function connect() {
 
@@ -13,85 +9,37 @@ function connect() {
     stompClient = Stomp.over(socket);
 
     stompClient.connect({}, function (frame) {
-
-        createButton.removeAttribute('disabled');
         joinButton.removeAttribute('disabled');
-
     });
 }
 
-createButton.onclick = function(ev) {
-
-    createButton.style.display = 'none';
-    joinButton.style.display = 'none';
-    if (USER_IS_TOUCH) gameArea.requestFullscreen();
-
-    var gameRequestCreatedSubscription = stompClient.subscribe('/user/topic/game-request-created', function (message) {
-        gameRequestCreatedSubscription.unsubscribe();
-        var gameInfo = JSON.parse(message.body);
-        gameArea.innerText = 'Wating for game to start...';
-
-        var gameStartedSubscription = stompClient.subscribe('/topic/game-started/' + gameInfo.gameUuid, function (m) {
-            gameStartedSubscription.unsubscribe();
-            gameStart(JSON.parse(m.body), gameInfo);
-        });
-        var gameAbortedSubscription = stompClient.subscribe('/topic/game-aborted/' + gameInfo.gameUuid, function (m) {
-            gameStartedSubscription.unsubscribe();
-            gameArea.innerText = '';
-            createButton.style.display = 'inline';
-            joinButton.style.display = 'inline';
-        });
-    });
-    stompClient.send('/app/create-game-request', {}, {});
-
-};
-
-gameRequests.onclick = function (ev) {
-    userGameRequestsSubscription.unsubscribe();
-    gameRequestsSubscription.unsubscribe();
-
-    gameRequests.style.display = 'none';
-    if (USER_IS_TOUCH) gameArea.requestFullscreen();
-
-    var gameId = ev.target.innerText;
-
-    var gameRequestJoinedSubscription = stompClient.subscribe('/user/topic/game-request-joined', function (message) {
-        gameRequestJoinedSubscription.unsubscribe();
-        var gameInfo = JSON.parse(message.body);
-
-        var gameStartedSubscription = stompClient.subscribe('/topic/game-started/' + gameId, function (message) {
-            gameStartedSubscription.unsubscribe();
-            gameStart(JSON.parse(message.body), gameInfo);
-        });
-        stompClient.send('/app/start-game/' + gameId, {}, {});
-
-    });
-    stompClient.send('/app/join-game-request/' + gameId, {}, {});
-
-};
-
 joinButton.onclick = function(ev) {
+    setTimeout(function() {
 
-    createButton.style.display = 'none';
-    joinButton.style.display = 'none';
-    gameRequests.style.display = 'block';
+        joinButton.style.display = 'none';
+        numPlayersSelect.style.display = 'none';
+        gameArea.innerText = 'Waiting for other players...';
+        if (USER_IS_TOUCH) gameArea.requestFullscreen();
 
-    var handleGameRequests = function (message) {
-        gameRequests.innerHTML = '';
+        var gameRequestJoinedSubscription = stompClient.subscribe('/user/topic/game-joined', function (message) {
+            gameRequestJoinedSubscription.unsubscribe();
+            var joinInfo = JSON.parse(message.body);
 
-        var requests = JSON.parse(message.body);
-        requests.forEach(function(r) {
-            var li = document.createElement('li');
-            li.innerText = r.uuid;
-            gameRequests.appendChild(li);
+            if (joinInfo.game) {
+                gameStart(joinInfo.game, joinInfo);
+            } else {
+                var gameStartedSubscription = stompClient.subscribe('/topic/game-started/' + joinInfo.gameUuid, function (message) {
+                    gameStartedSubscription.unsubscribe();
+                    gameStart(JSON.parse(message.body), joinInfo);
+                });
+            }
+
         });
 
-    };
+        var numPlayers = numPlayersSelect.options[numPlayersSelect.selectedIndex].value;
+        stompClient.send('/app/join-game/' + numPlayers, {}, {});
 
-    userGameRequestsSubscription = stompClient.subscribe('/user/topic/game-requests', handleGameRequests);
-    gameRequestsSubscription = stompClient.subscribe('/topic/game-requests', handleGameRequests);
-    stompClient.send('/app/get-game-requests', {}, {});
-
+    }, 200);
 };
 
 // Check if user is on a touch device

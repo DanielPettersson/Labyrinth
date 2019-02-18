@@ -11,17 +11,20 @@
         <style>
             body { margin: 0; overflow: hidden }
             canvas { width: 100%; height: 100% }
+            #gameArea {
+                color: rgb(255, 0, 0);
+            }
         </style>
     </head>
 
     <body>
 
-        <button id="createButton" type="button" disabled="disabled">Create game</button>
+        <select id="numPlayers">
+            <option value="2" selected="selected">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+        </select>
         <button id="joinButton" type="button" disabled="disabled">Join game</button>
-
-        <ul id="gameRequests" style="display: none">
-
-        </ul>
 
         <div id="gameArea">
 

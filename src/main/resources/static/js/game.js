@@ -1,4 +1,4 @@
-function gameStart(game, gameInfo) {
+function gameStart(game, joinInfo) {
 
     gameArea.innerText = '';
 
@@ -7,7 +7,7 @@ function gameStart(game, gameInfo) {
     var windowHalfX = WIDTH / 2;
     var windowHalfY = HEIGHT / 2;
     var mouseX = 0, mouseY = 0;
-    var colors = [0xff0000, 0x0000ff];
+    var colors = [0xff0000, 0x0000ff, 0x00ff00, 0xff00ff];
 
     document.addEventListener( 'mousemove', onDocumentMouseMove, false );
     document.addEventListener( 'mouseleave', onDocumentMouseLeave, false );
@@ -24,7 +24,7 @@ function gameStart(game, gameInfo) {
 
     var renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize( window.innerWidth, window.innerHeight );
-    renderer.setClearColor(colors[gameInfo.playerIndex], 1);
+    renderer.setClearColor(colors[joinInfo.playerIndex], 1);
     gameArea.appendChild( renderer.domElement );
 
     var light1 = new THREE.PointLight( 0xffffff, 1, 100 );
@@ -46,7 +46,7 @@ function gameStart(game, gameInfo) {
 
     function doMove(move) {
         if (move) {
-            stompClient.send('/app/move-player/' + game.uuid + '/' + gameInfo.playerUuid, {}, JSON.stringify(move));
+            stompClient.send('/app/move-player/' + game.uuid + '/' + joinInfo.playerUuid, {}, JSON.stringify(move));
         }
     }
 

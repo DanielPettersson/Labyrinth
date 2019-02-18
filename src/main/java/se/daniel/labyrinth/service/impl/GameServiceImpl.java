@@ -5,11 +5,8 @@ import org.springframework.util.Assert;
 import se.daniel.labyrinth.model.*;
 import se.daniel.labyrinth.service.GameService;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.*;
-
-import static java.util.stream.Collectors.toList;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class GameServiceImpl implements GameService {
@@ -17,52 +14,41 @@ public class GameServiceImpl implements GameService {
     private static final int DEFAULT_GAME_SIZE = 10;
 
     private final Map<UUID, Game> games = new HashMap<>();
-
-    private final Map<UUID, GameRequest> gameRequests = new LinkedHashMap<>();
+    private final Map<Integer, GameRequest> gameRequests = new ConcurrentHashMap<>();
 
     @Override
-    public PlayerInfo createGameRequest() {
-        final GameRequest gameRequest = new GameRequest();
-        gameRequests.put(gameRequest.getGameUuid(), gameRequest);
+    public JoinInfo joinGame(int numPlayers) {
+
+        Assert.isTrue(numPlayers >= 2, "Has to be at least one player");
+        Assert.isTrue(numPlayers <= 4, "Max four players supported");
+
+        final GameRequest gameRequest = gameRequests.computeIfAbsent(numPlayers, n -> new GameRequest());
         final UUID playerUuid = gameRequest.addPlayer();
-        return new PlayerInfo(gameRequest.getGameUuid(), playerUuid, 0);
+        final Game game = gameRequest.getPlayerUuids().size() == numPlayers ? startGame(numPlayers) : null;
+
+        return new JoinInfo(
+                gameRequest.getGameUuid(),
+                playerUuid,
+                gameRequest.getPlayerUuids().size() - 1,
+                game
+        );
     }
 
-    public List<PublicGameRequest> getGameRequests() {
-        return gameRequests.values().stream().map(PublicGameRequest::new).collect(toList());
-    }
+    private Game startGame(int numPlayers) {
+        final var gameRequest = gameRequests.remove(numPlayers);
 
-    @Override
-    public List<GameRequest> removeTimedOutGameRequests() {
-        final LocalDateTime now = LocalDateTime.now();
-        final List<GameRequest> oldRequests = gameRequests
-                .values()
-                .stream()
-                .filter(r -> Duration.between(r.getCreationDate(), now).getSeconds() > 60)
-                .collect(toList());
-
-        oldRequests.forEach(r -> gameRequests.remove(r.getGameUuid()));
-        return oldRequests;
-    }
-
-    @Override
-    public PlayerInfo joinGameRequest(UUID uuid) {
-        final GameRequest gameRequest = gameRequests.get(uuid);
-        final UUID playerUuid = gameRequest.addPlayer();
-        return new PlayerInfo(uuid, playerUuid, gameRequest.getPlayerUuids().size() - 1);
-    }
-
-    @Override
-    public Game startGame(UUID uuid) {
-        final GameRequest gameRequest = gameRequests.remove(uuid);
-
-        Assert.isTrue(gameRequest.getPlayerUuids().size() == 2, "Currently only 2 players is supported");
         var players = new ArrayList<Player>();
         players.add(new Player(gameRequest.getPlayerUuids().get(0), new Location(0, 0)));
         players.add(new Player(gameRequest.getPlayerUuids().get(1), new Location(DEFAULT_GAME_SIZE - 1, DEFAULT_GAME_SIZE - 1)));
+        if (numPlayers >= 3) {
+            players.add(new Player(gameRequest.getPlayerUuids().get(2), new Location(0, DEFAULT_GAME_SIZE - 1)));
+        }
+        if (numPlayers == 4) {
+            players.add(new Player(gameRequest.getPlayerUuids().get(3), new Location(DEFAULT_GAME_SIZE - 1, 0)));
+        }
 
         var game = new Game(
-                uuid,
+                gameRequest.getGameUuid(),
                 new LabyrinthBuilder(new Random()).build(DEFAULT_GAME_SIZE),
                 players
         );
