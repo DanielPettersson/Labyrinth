@@ -1,5 +1,6 @@
 package se.daniel.labyrinth.service;
 
+import se.daniel.labyrinth.model.GameRequest;
 import se.daniel.labyrinth.model.JoinInfo;
 import se.daniel.labyrinth.model.Location;
 import se.daniel.labyrinth.model.Player;
@@ -12,4 +13,6 @@ public interface GameService {
     JoinInfo joinGame(int numPlayers);
 
     List<Player> movePlayer(UUID gameId, UUID playerId, Location move);
+
+    List<GameRequest> removeTimedOutGameRequests();
 }

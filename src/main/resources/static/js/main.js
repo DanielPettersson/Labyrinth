@@ -28,7 +28,17 @@ joinButton.onclick = function(ev) {
             if (joinInfo.game) {
                 gameStart(joinInfo.game, joinInfo);
             } else {
+
+                var gameAbortedSubscription = stompClient.subscribe('/topic/game-request-aborted/' + joinInfo.gameUuid, function (message) {
+                    gameAbortedSubscription.unsubscribe();
+                    gameStartedSubscription.unsubscribe();
+                    joinButton.style.display = 'inline-block';
+                    numPlayersSelect.style.display = 'inline-block';
+                    gameArea.innerText = '';
+                });
+
                 var gameStartedSubscription = stompClient.subscribe('/topic/game-started/' + joinInfo.gameUuid, function (message) {
+                    gameAbortedSubscription.unsubscribe();
                     gameStartedSubscription.unsubscribe();
                     gameStart(JSON.parse(message.body), joinInfo);
                 });

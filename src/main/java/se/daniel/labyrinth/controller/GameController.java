@@ -6,6 +6,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
 import se.daniel.labyrinth.model.JoinInfo;
 import se.daniel.labyrinth.model.Location;
@@ -48,8 +49,11 @@ public class GameController {
         return gameService.movePlayer(UUID.fromString(gameId), UUID.fromString(playerId), move);
     }
 
-    private void updateGameRequests() {
-
+    @Scheduled(fixedRate = 1000)
+    private void removeTimedOutGameRequests() {
+        gameService.removeTimedOutGameRequests().forEach(
+                r -> messagingTemplate.convertAndSend("/topic/game-request-aborted/" + r.getGameUuid(), "")
+        );
     }
 
 }

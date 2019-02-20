@@ -5,8 +5,12 @@ import org.springframework.util.Assert;
 import se.daniel.labyrinth.model.*;
 import se.daniel.labyrinth.service.GameService;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static java.util.stream.Collectors.toList;
 
 @Service
 public class GameServiceImpl implements GameService {
@@ -70,6 +74,20 @@ public class GameServiceImpl implements GameService {
         }
 
         return game.getPlayers();
+    }
+
+    @Override
+    public List<GameRequest> removeTimedOutGameRequests() {
+        final LocalDateTime now = LocalDateTime.now();
+        final List<Integer> oldKeys = gameRequests
+                .entrySet()
+
+                .stream()
+                .filter(r -> Duration.between(r.getValue().getCreationDate(), now).getSeconds() > 30)
+                .map(Map.Entry::getKey)
+                .collect(toList());
+
+        return oldKeys.stream().map(gameRequests::remove).collect(toList());
     }
 
 }
