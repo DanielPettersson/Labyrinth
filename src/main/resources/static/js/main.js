@@ -2,6 +2,7 @@ var stompClient;
 var joinButton = document.getElementById('joinButton');
 var gameArea = document.getElementById('gameArea');
 var numPlayersSelect = document.getElementById('numPlayers');
+var gameSizeInput = document.getElementById('gameSize');
 var formDiv = document.getElementById('formDiv');
 
 function connect() {
@@ -46,7 +47,8 @@ joinButton.onclick = function(ev) {
         });
 
         var numPlayers = numPlayersSelect.options[numPlayersSelect.selectedIndex].value;
-        stompClient.send('/app/join-game/' + numPlayers, {}, {});
+        var gameSize = gameSizeInput.value;
+        stompClient.send('/app/join-game', {}, JSON.stringify({ numPlayers: numPlayers, gameSize: gameSize }));
 
     }, 200);
 };

@@ -1,6 +1,8 @@
-package se.daniel.labyrinth.model;
+package se.daniel.labyrinth.util;
 
 import lombok.RequiredArgsConstructor;
+import se.daniel.labyrinth.model.Labyrinth;
+import se.daniel.labyrinth.model.Location;
 
 import java.util.*;
 
@@ -14,7 +16,7 @@ public class LabyrinthBuilder {
     private Set<Location> visitedLocations;
     private Labyrinth labyrinth;
 
-    public Labyrinth build(final int size) {
+    public Labyrinth build(int size) {
 
         visitedLocations = new HashSet<>();
         labyrinth = new Labyrinth(size);
@@ -25,7 +27,7 @@ public class LabyrinthBuilder {
         return labyrinth;
     }
 
-    private void visitCell(final Location originLocation, Location location) {
+    private void visitCell(Location originLocation, Location location) {
 
         // Already visited, abort
 
@@ -61,7 +63,7 @@ public class LabyrinthBuilder {
         locationsToVisit.forEach(l -> visitCell(location, l));
     }
 
-    private List<Location> getLocationsToVisit(final Location location) {
+    private List<Location> getLocationsToVisit(Location location) {
 
         List<Location> destinations = new ArrayList<>();
         destinations.add(new Location(location.getX(), location.getY() - 1));

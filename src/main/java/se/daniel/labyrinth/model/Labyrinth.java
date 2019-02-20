@@ -13,7 +13,7 @@ public class Labyrinth {
     private final int size;
     private final List<List<Cell>> cells;
 
-    Labyrinth(final int size) {
+    public Labyrinth(final int size) {
 
         this.size = size;
         cells = range(0, size)

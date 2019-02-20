@@ -35,7 +35,7 @@ function gameStart(game, joinInfo) {
     light2.position.set( labyrinthSize*0.5, -labyrinthSize*0.5, labyrinthSize );
     scene.add( light2 );
 
-    var labyrinthPlanes = createLabyrinthModel();
+    var labyrinthCells = createLabyrinthModel();
 
     var players = createPlayers(game.players);
     positionPlayers(players, game.players);
@@ -46,7 +46,7 @@ function gameStart(game, joinInfo) {
 
         for (var y = 0; y < labyrinthSize; y++) {
             for (var x = 0; x < labyrinthSize; x++) {
-                labyrinthPlanes[y][x].targetColor.set(colors[gameState.cellsOwnerIndices[y][x]]);
+                labyrinthCells[y][x].targetColor.set(colors[gameState.cellsOwnerIndices[y][x]]);
             }
         }
 
@@ -74,9 +74,8 @@ function gameStart(game, joinInfo) {
 
         for (var y = 0; y < labyrinthSize; y++) {
             for (var x = 0; x < labyrinthSize; x++) {
-                var lp = labyrinthPlanes[y][x];
-                var diff = lp.targetColor.clone().sub(lp.material.color).multiplyScalar(0.12);
-                lp.material.color.copy(lp.material.color.add(diff));
+                var lp = labyrinthCells[y][x];
+                lp.material.color.lerp(lp.targetColor, 0.01);
             }
         }
 
@@ -87,6 +86,9 @@ function gameStart(game, joinInfo) {
     function createLabyrinthModel() {
 
         var labyrinthWallMaterial = new THREE.MeshLambertMaterial( { color: 0xFFFF00 } );
+
+        var labyrinthPlane = new THREE.Mesh( new THREE.PlaneBufferGeometry(labyrinthSize, labyrinthSize), new THREE.MeshLambertMaterial( { color: 0x999999 } ));
+        scene.add(labyrinthPlane);
 
         var northLabyrinthWall = new THREE.Mesh( new THREE.BoxBufferGeometry( labyrinthSize, 0.1, 0.5 ), labyrinthWallMaterial );
         northLabyrinthWall.position.set(0, -halfLabyrinthSize, 0.24);
@@ -104,19 +106,19 @@ function gameStart(game, joinInfo) {
         westLabyrinthWall.position.set(-halfLabyrinthSize, 0, 0.24);
         scene.add( westLabyrinthWall );
 
-        var labyrinthPlanes = [];
+        var labyrinthCells = [];
 
         for (var y = 0; y < labyrinthSize; y++) {
 
-            labyrinthPlanes.push([]);
+            labyrinthCells.push([]);
 
             for (var x = 0; x < labyrinthSize; x++) {
 
-                var labyrinthPlane = new THREE.Mesh( new THREE.PlaneBufferGeometry(1, 1), new THREE.MeshLambertMaterial( { color: 0x999999 } ));
-                labyrinthPlane.position.set(-halfLabyrinthSize + x + 0.5, -halfLabyrinthSize + y + 0.5, 0);
-                labyrinthPlane.targetColor = new THREE.Color(0x999999);
-                scene.add( labyrinthPlane );
-                labyrinthPlanes[y].push(labyrinthPlane);
+                var labyrinthCell = new THREE.Mesh( new THREE.CircleGeometry(0.3, 10), new THREE.MeshLambertMaterial( { color: 0x999999 } ));
+                labyrinthCell.position.set(-halfLabyrinthSize + x + 0.5, -halfLabyrinthSize + y + 0.5, 0.01);
+                labyrinthCell.targetColor = new THREE.Color(0x999999);
+                scene.add( labyrinthCell );
+                labyrinthCells[y].push(labyrinthCell);
 
                 var cell = game.labyrinth.cells[y][x];
 
@@ -135,7 +137,7 @@ function gameStart(game, joinInfo) {
             }
         }
 
-        return labyrinthPlanes;
+        return labyrinthCells;
     }
 
     function createPlayers(playersData) {

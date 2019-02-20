@@ -8,6 +8,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
+import se.daniel.labyrinth.model.GameSpecification;
 import se.daniel.labyrinth.model.GameState;
 import se.daniel.labyrinth.model.JoinInfo;
 import se.daniel.labyrinth.model.Location;
@@ -21,16 +22,16 @@ public class GameController {
     private final GameService gameService;
     private final SimpMessagingTemplate messagingTemplate;
 
-    public GameController(@Autowired final GameService gameService, @Autowired final SimpMessagingTemplate messagingTemplate) {
+    public GameController(@Autowired GameService gameService, @Autowired SimpMessagingTemplate messagingTemplate) {
         this.gameService = gameService;
         this.messagingTemplate = messagingTemplate;
     }
 
-    @MessageMapping("/join-game/{numPlayers}")
+    @MessageMapping("/join-game")
     @SendToUser("/topic/game-joined")
-    public JoinInfo joinGameRequest(@DestinationVariable int numPlayers) {
+    public JoinInfo joinGameRequest(GameSpecification gameSpecification) {
 
-        final JoinInfo joinInfo = gameService.joinGame(numPlayers);
+        final JoinInfo joinInfo = gameService.joinGame(gameSpecification);
 
         if (joinInfo.getGame() != null) {
             messagingTemplate.convertAndSend("/topic/game-started/" + joinInfo.getGameUuid(), joinInfo.getGame());
@@ -51,7 +52,7 @@ public class GameController {
     @Scheduled(fixedRate = 1000)
     private void removeTimedOutGameRequests() {
         gameService.removeTimedOutGameRequests().forEach(
-                r -> messagingTemplate.convertAndSend("/topic/game-request-aborted/" + r.getGameUuid(), "")
+                gameUuid -> messagingTemplate.convertAndSend("/topic/game-request-aborted/" + gameUuid, "")
         );
     }
 
