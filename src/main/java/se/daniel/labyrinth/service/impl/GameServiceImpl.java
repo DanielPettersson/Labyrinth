@@ -61,7 +61,7 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public List<Player> movePlayer(UUID gameId, UUID playerId, Location move) {
+    public GameState movePlayer(UUID gameId, UUID playerId, Location move) {
 
         final Game game = games.get(gameId);
 
@@ -70,10 +70,31 @@ public class GameServiceImpl implements GameService {
                     .stream()
                     .filter(p -> playerId.equals(p.getUuid()))
                     .filter(p -> game.isValidMove(p, move))
-                    .forEach(p -> p.setLocation(p.getLocation().add(move)));
+                    .forEach(p -> {
+                        final Location to = p.getLocation().add(move);
+                        final int ownerIndex = game.getPlayers().indexOf(p);
+                        game.getLabyrinth().getCell(to).setOwnerIndex(ownerIndex);
+                        p.setLocation(to);
+                    });
         }
 
-        return game.getPlayers();
+        final List<List<Integer>> cellOwnerIndices = game
+                .getLabyrinth()
+                .getCells()
+                .stream()
+                .map(
+                        cells -> cells
+                                .stream()
+                                .map(Cell::getOwnerIndex)
+                                .collect(toList())
+                )
+                .collect(toList());
+
+
+        return new GameState(
+                cellOwnerIndices,
+                game.getPlayers()
+        );
     }
 
     @Override

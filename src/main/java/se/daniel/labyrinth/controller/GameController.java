@@ -8,12 +8,11 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
+import se.daniel.labyrinth.model.GameState;
 import se.daniel.labyrinth.model.JoinInfo;
 import se.daniel.labyrinth.model.Location;
-import se.daniel.labyrinth.model.Player;
 import se.daniel.labyrinth.service.GameService;
 
-import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -42,7 +41,7 @@ public class GameController {
 
     @MessageMapping("/move-player/{gameId}/{playerId}")
     @SendTo("/topic/player-moved/{gameId}")
-    public List<Player> movePlayer(
+    public GameState movePlayer(
             @DestinationVariable String gameId,
             @DestinationVariable String playerId,
             Location move) {

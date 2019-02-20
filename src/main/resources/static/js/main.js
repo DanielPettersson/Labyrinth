@@ -2,6 +2,7 @@ var stompClient;
 var joinButton = document.getElementById('joinButton');
 var gameArea = document.getElementById('gameArea');
 var numPlayersSelect = document.getElementById('numPlayers');
+var formDiv = document.getElementById('formDiv');
 
 function connect() {
 
@@ -16,8 +17,7 @@ function connect() {
 joinButton.onclick = function(ev) {
     setTimeout(function() {
 
-        joinButton.style.display = 'none';
-        numPlayersSelect.style.display = 'none';
+        formDiv.style.display = 'none';
         gameArea.innerText = 'Waiting for other players...';
         if (USER_IS_TOUCH) gameArea.requestFullscreen();
 
@@ -32,8 +32,7 @@ joinButton.onclick = function(ev) {
                 var gameAbortedSubscription = stompClient.subscribe('/topic/game-request-aborted/' + joinInfo.gameUuid, function (message) {
                     gameAbortedSubscription.unsubscribe();
                     gameStartedSubscription.unsubscribe();
-                    joinButton.style.display = 'inline-block';
-                    numPlayersSelect.style.display = 'inline-block';
+                    formDiv.style.display = 'block';
                     gameArea.innerText = '';
                 });
 

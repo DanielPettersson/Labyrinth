@@ -8,7 +8,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
 
 @Getter
-class Labyrinth {
+public class Labyrinth {
 
     private final int size;
     private final List<List<Cell>> cells;
@@ -25,7 +25,7 @@ class Labyrinth {
                 .collect(toList());
     }
 
-    Cell getCell(final Location location) {
+    public Cell getCell(final Location location) {
         return cells.get(location.getY()).get(location.getX());
     }
 
