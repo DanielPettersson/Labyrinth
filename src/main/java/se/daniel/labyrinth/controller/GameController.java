@@ -3,13 +3,11 @@ package se.daniel.labyrinth.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
 import se.daniel.labyrinth.model.GameSpecification;
-import se.daniel.labyrinth.model.GameState;
 import se.daniel.labyrinth.model.JoinInfo;
 import se.daniel.labyrinth.model.Location;
 import se.daniel.labyrinth.service.GameService;
@@ -41,12 +39,22 @@ public class GameController {
     }
 
     @MessageMapping("/move-player/{gameId}/{playerId}")
-    @SendTo("/topic/player-moved/{gameId}")
-    public GameState movePlayer(
+    public void movePlayer(
             @DestinationVariable String gameId,
             @DestinationVariable String playerId,
             Location move) {
-        return gameService.movePlayer(UUID.fromString(gameId), UUID.fromString(playerId), move);
+
+        final var gameUuid = UUID.fromString(gameId);
+
+        if (gameService.movePlayer(gameUuid, UUID.fromString(playerId), move)) {
+
+            gameService.getPlayers(gameUuid).forEach(
+                    playerUuid -> messagingTemplate.convertAndSend(
+                            "/topic/player-moved/" + gameId + "/" + playerUuid.toString(),
+                            gameService.getGameState(gameUuid, playerUuid)
+                    )
+            );
+        }
     }
 
     @Scheduled(fixedRate = 1000)

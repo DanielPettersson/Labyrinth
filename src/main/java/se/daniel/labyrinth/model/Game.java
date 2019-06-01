@@ -18,9 +18,15 @@ public class Game {
         final Location from = player.getLocation();
         final Location to = from.add(move);
 
+        // Can only move a single step
+
+        if (Math.abs(move.getX() + move.getY()) != 1) {
+            return false;
+        }
+
         // Check labyrinth constraints
 
-        if (!labyrinth.isValidMove(from, to)) {
+        else if (!labyrinth.isValidMove(from, to, getPlayers().indexOf(player))) {
             return false;
         }
 
@@ -28,5 +34,9 @@ public class Game {
 
         return players.stream().noneMatch(p -> p.getLocation().equals(to));
 
+    }
+
+    public Player getPlayerByUUid(UUID uuid) {
+        return players.stream().filter(p -> uuid.equals(p.getUuid())).findFirst().orElseThrow();
     }
 }

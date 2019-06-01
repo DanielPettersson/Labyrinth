@@ -70,7 +70,7 @@ public class GameServiceImpl implements GameService {
                 p -> game
                         .getLabyrinth()
                         .getCell(p.getLocation())
-                        .setOwnerIndex(game.getPlayers().indexOf(p))
+                        .playerVisit(game.getPlayers().indexOf(p))
         );
 
         games.put(game.getUuid(), game);
@@ -78,38 +78,49 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public GameState movePlayer(UUID gameId, UUID playerId, Location move) {
+    public boolean movePlayer(UUID gameId, UUID playerId, Location move) {
 
         final Game game = games.get(gameId);
+        final var player = game.getPlayerByUUid(playerId);
 
-        if (Math.abs(move.getX() + move.getY()) == 1) {
-            game.getPlayers()
-                    .stream()
-                    .filter(p -> playerId.equals(p.getUuid()))
-                    .filter(p -> game.isValidMove(p, move))
-                    .forEach(p -> {
-                        final Location to = p.getLocation().add(move);
-                        final int ownerIndex = game.getPlayers().indexOf(p);
-                        game.getLabyrinth().getCell(to).setOwnerIndex(ownerIndex);
-                        p.setLocation(to);
-                    });
+        if (game.isValidMove(player, move)) {
+
+            final Location to = player.getLocation().add(move);
+            final int ownerIndex = game.getPlayers().indexOf(player);
+            game.getLabyrinth().getCell(to).playerVisit(ownerIndex);
+            player.setLocation(to);
+
+            return true;
+
+        } else {
+
+            return false;
         }
 
-        final List<List<Integer>> cellOwnerIndices = game
-                .getLabyrinth()
-                .getCells()
-                .stream()
-                .map(
-                        cells -> cells
-                                .stream()
-                                .map(Cell::getOwnerIndex)
-                                .collect(toList())
-                )
-                .collect(toList());
+    }
 
+    @Override
+    public List<UUID> getPlayers(UUID gameId) {
+        return games.get(gameId).getPlayers().stream().map(Player::getUuid).collect(toList());
+    }
+
+    @Override
+    public GameState getGameState(UUID gameId, UUID playerId) {
+        final var game = games.get(gameId);
+        final var player = game.getPlayerByUUid(playerId);
+        final var playerIndex = game.getPlayers().indexOf(player);
+
+        final var cellOwnerIndices = game.getLabyrinth().getCells().stream().map(
+                cells -> cells.stream().map(Cell::getOwnerIndex).collect(toList())
+        ).collect(toList());
+
+        final var cellsVisitable = game.getLabyrinth().getCells().stream().map(
+                cells -> cells.stream().map(c -> c.canVisit(playerIndex)).collect(toList())
+        ).collect(toList());
 
         return new GameState(
                 cellOwnerIndices,
+                cellsVisitable,
                 game.getPlayers()
         );
     }

@@ -9,5 +9,6 @@ import java.util.List;
 @AllArgsConstructor
 public class GameState {
     private final List<List<Integer>> cellsOwnerIndices;
+    private final List<List<Boolean>> cellsVisitable;
     private final List<Player> players;
 }

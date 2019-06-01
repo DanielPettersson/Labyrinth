@@ -29,7 +29,7 @@ public class Labyrinth {
         return cells.get(location.getY()).get(location.getX());
     }
 
-    boolean isValidMove(Location from, Location to) {
+    boolean isValidMove(Location from, Location to, int playerIndex) {
 
         // Do not move outside of labyrinth
 
@@ -39,8 +39,16 @@ public class Labyrinth {
 
         // Do not move through walls
 
-        final int directionIndex = getDirectionIndex(from, to);
-        return !getCell(from).getWalls()[directionIndex];
+        else if (getCell(from).getWalls()[getDirectionIndex(from, to)]) {
+            return false;
+        }
+
+        // Do not visit same cell too many times
+
+        else {
+            return getCell(to).canVisit(playerIndex);
+        }
+
     }
 
     private int getDirectionIndex(Location from, Location to) {

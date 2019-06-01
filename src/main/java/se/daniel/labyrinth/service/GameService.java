@@ -12,7 +12,11 @@ public interface GameService {
 
     JoinInfo joinGame(GameSpecification gameSpecification);
 
-    GameState movePlayer(UUID gameId, UUID playerId, Location move);
+    boolean movePlayer(UUID gameId, UUID playerId, Location move);
+
+    List<UUID> getPlayers(UUID gameId);
+
+    GameState getGameState(UUID gameId, UUID playerId);
 
     List<UUID> removeTimedOutGameRequests();
 }

@@ -40,13 +40,14 @@ function gameStart(game, joinInfo) {
     var players = createPlayers(game.players);
     positionPlayers(players, game.players);
 
-    stompClient.subscribe('/topic/player-moved/' + game.uuid, function (message) {
+    stompClient.subscribe('/topic/player-moved/' + game.uuid + '/' + joinInfo.playerUuid, function (message) {
         var gameState = JSON.parse(message.body);
         positionPlayers(players, gameState.players);
 
         for (var y = 0; y < labyrinthSize; y++) {
             for (var x = 0; x < labyrinthSize; x++) {
-                labyrinthCells[y][x].targetColor.set(colors[gameState.cellsOwnerIndices[y][x]]);
+                labyrinthCells[y][x].ownerMarker.targetColor.set(colors[gameState.cellsOwnerIndices[y][x]]);
+                labyrinthCells[y][x].visitableMarker.targetOpacity = gameState.cellsVisitable[y][x] ? 0.0 : 0.7;
             }
         }
 
@@ -74,8 +75,9 @@ function gameStart(game, joinInfo) {
 
         for (var y = 0; y < labyrinthSize; y++) {
             for (var x = 0; x < labyrinthSize; x++) {
-                var lp = labyrinthCells[y][x];
-                lp.material.color.lerp(lp.targetColor, 0.01);
+                var lc = labyrinthCells[y][x];
+                lc.ownerMarker.material.color.lerp(lc.ownerMarker.targetColor, 0.01);
+                lc.visitableMarker.material.opacity += (lc.visitableMarker.targetOpacity - lc.visitableMarker.material.opacity) * 0.1;
             }
         }
 
@@ -114,11 +116,20 @@ function gameStart(game, joinInfo) {
 
             for (var x = 0; x < labyrinthSize; x++) {
 
-                var labyrinthCell = new THREE.Mesh( new THREE.CircleGeometry(0.3, 10), new THREE.MeshLambertMaterial( { color: 0x999999 } ));
-                labyrinthCell.position.set(-halfLabyrinthSize + x + 0.5, -halfLabyrinthSize + y + 0.5, 0.01);
-                labyrinthCell.targetColor = new THREE.Color(0x999999);
-                scene.add( labyrinthCell );
-                labyrinthCells[y].push(labyrinthCell);
+                var ownerMarker = new THREE.Mesh( new THREE.CircleGeometry(0.3, 10), new THREE.MeshLambertMaterial( { color: 0x999999 } ));
+                ownerMarker.position.set(-halfLabyrinthSize + x + 0.5, -halfLabyrinthSize + y + 0.5, 0.01);
+                ownerMarker.targetColor = new THREE.Color(0x999999);
+                scene.add( ownerMarker );
+
+                var visitableMarker = new THREE.Mesh( new THREE.BoxBufferGeometry(0.9, 0.9, 0.6), new THREE.MeshLambertMaterial( { color: 0x777777, transparent: true, opacity: 0.0}  ))
+                visitableMarker.position.set(-halfLabyrinthSize + x + 0.5, -halfLabyrinthSize + y + 0.5, 0.3);
+                visitableMarker.targetOpacity = 0.0;
+                scene.add( visitableMarker );
+
+                labyrinthCells[y].push({
+                    ownerMarker: ownerMarker,
+                    visitableMarker: visitableMarker
+                });
 
                 var cell = game.labyrinth.cells[y][x];
 
