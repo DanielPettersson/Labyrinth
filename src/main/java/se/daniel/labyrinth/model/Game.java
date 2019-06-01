@@ -39,4 +39,5 @@ public class Game {
     public Player getPlayerByUUid(UUID uuid) {
         return players.stream().filter(p -> uuid.equals(p.getUuid())).findFirst().orElseThrow();
     }
+
 }

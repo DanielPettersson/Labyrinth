@@ -2,6 +2,7 @@ package se.daniel.labyrinth.model;
 
 import lombok.Getter;
 
+import java.util.Collection;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
@@ -23,6 +24,10 @@ public class Labyrinth {
                                 .collect(toList())
                 )
                 .collect(toList());
+    }
+
+    public boolean isAllCellsOwned() {
+        return getCells().stream().flatMap(Collection::stream).allMatch(c -> c.getOwnerIndex() != -1);
     }
 
     public Cell getCell(final Location location) {

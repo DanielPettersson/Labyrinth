@@ -19,6 +19,7 @@ import static java.util.stream.Collectors.toList;
 public class GameServiceImpl implements GameService {
 
     private static final int GAME_REQUEST_TTL_SECONDS = 30;
+    private static final List<Location> VALID_MOVES = List.of(new Location(0, 1), new Location(0, -1), new Location(1, 0), new Location(-1, 0));
 
     private final Map<UUID, Game> games = new HashMap<>();
     private final Map<GameSpecification, GameRequest> gameRequests = new ConcurrentHashMap<>();
@@ -123,6 +124,21 @@ public class GameServiceImpl implements GameService {
                 cellsVisitable,
                 game.getPlayers()
         );
+    }
+
+    @Override
+    public Optional<GameEnded> getGameEnded(UUID gameId) {
+
+        final var game = games.get(gameId);
+        final var allCellsOwned = game.getLabyrinth().isAllCellsOwned();
+        final var noPlayerHasValidMove = game.getPlayers().stream().noneMatch(p -> VALID_MOVES.stream().anyMatch(m -> game.isValidMove(p, m)));
+
+        if (allCellsOwned || noPlayerHasValidMove) {
+            return Optional.of(GameEnded.fromGame(game));
+        } else {
+            return Optional.empty();
+        }
+
     }
 
     @Override

@@ -54,7 +54,11 @@ public class GameController {
                             gameService.getGameState(gameUuid, playerUuid)
                     )
             );
+
         }
+
+        final var gameEndedOpt = gameService.getGameEnded(gameUuid);
+        gameEndedOpt.ifPresent(gameEnded -> messagingTemplate.convertAndSend("/topic/game-ended/" + gameUuid, gameEnded));
     }
 
     @Scheduled(fixedRate = 1000)

@@ -8,6 +8,7 @@ function gameStart(game, joinInfo) {
     var windowHalfY = HEIGHT / 2;
     var mouseX = 0, mouseY = 0;
     var colors = [0xff0000, 0x0000ff, 0x00ff00, 0xff00ff];
+    var canMove = true;
 
     document.addEventListener( 'mousemove', onDocumentMouseMove, false );
     document.addEventListener( 'mouseleave', onDocumentMouseLeave, false );
@@ -53,8 +54,39 @@ function gameStart(game, joinInfo) {
 
     });
 
+    stompClient.subscribe('/topic/game-ended/' + game.uuid, function (message) {
+        canMove = false;
+
+        var gameEnded = JSON.parse(message.body);
+
+        new THREE.FontLoader().load( 'fonts/helvetiker_regular.typeface.json', function ( font ) {
+
+            for (var i = 0; i < gameEnded.players.length; i++) {
+
+                var playerPoints = gameEnded.points[i];
+                var playerLocation = gameEnded.players[i].location;
+
+                var pointsGeo = new THREE.TextBufferGeometry('' + playerPoints, { font: font, size: 0.5, height: 0.2 });
+                pointsGeo.computeBoundingBox();
+                var textWidth = pointsGeo.boundingBox.max.x - pointsGeo.boundingBox.min.x;
+                var pointsMesh = new THREE.Mesh(pointsGeo, new THREE.MeshLambertMaterial( { color: 0xeeeeee } ));
+                pointsMesh.position.set(-halfLabyrinthSize + playerLocation.x + 0.5 - textWidth * 0.5, -halfLabyrinthSize + playerLocation.y + 0.2, 0.6);
+                scene.add(pointsMesh);
+
+            }
+
+
+        }, function (xhr) {
+            console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+        }, function (err) {
+            console.log(err);
+        });
+
+
+    });
+
     function doMove(move) {
-        if (move) {
+        if (move && canMove) {
             stompClient.send('/app/move-player/' + game.uuid + '/' + joinInfo.playerUuid, {}, JSON.stringify(move));
         }
     }
