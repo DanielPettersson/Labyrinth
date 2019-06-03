@@ -1,10 +1,12 @@
 package se.daniel.labyrinth.util;
 
 import lombok.RequiredArgsConstructor;
+import se.daniel.labyrinth.model.Cell;
 import se.daniel.labyrinth.model.Labyrinth;
 import se.daniel.labyrinth.model.Location;
 
 import java.util.*;
+import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
 
@@ -21,10 +23,27 @@ public class LabyrinthBuilder {
         visitedLocations = new HashSet<>();
         labyrinth = new Labyrinth(size);
 
-        final Location startLocation = new Location(random.nextInt(size), random.nextInt(size));
+        // Create labyrinth
+
+        final Location startLocation = randomLocation(size);
         visitCell(startLocation, startLocation);
 
+        // Break down some more walls
+
+        IntStream.range(0, size * 2).forEach(i -> {
+            final var origLocation = randomLocation(size);
+            final var locations = getLocationsToVisit(origLocation);
+            final var location = locations.get(random.nextInt(locations.size()));
+            var origCell = labyrinth.getCell(origLocation);
+            var cell = labyrinth.getCell(location);
+            breakDownWalls(origLocation, location, origCell, cell);
+        });
+
         return labyrinth;
+    }
+
+    private Location randomLocation(final int size) {
+        return new Location(random.nextInt(size), random.nextInt(size));
     }
 
     private void visitCell(Location originLocation, Location location) {
@@ -40,8 +59,13 @@ public class LabyrinthBuilder {
 
         visitedLocations.add(location);
 
-        // Break down walls
+        breakDownWalls(originLocation, location, originCell, cell);
 
+        final List<Location> locationsToVisit = getLocationsToVisit(location);
+        locationsToVisit.forEach(l -> visitCell(location, l));
+    }
+
+    private void breakDownWalls(Location originLocation, Location location, Cell originCell, Cell cell) {
         if (originLocation.getX() > location.getX()) {
             cell.getWalls()[1] = false;
             originCell.getWalls()[3] = false;
@@ -58,9 +82,6 @@ public class LabyrinthBuilder {
             cell.getWalls()[0] = false;
             originCell.getWalls()[2] = false;
         }
-
-        final List<Location> locationsToVisit = getLocationsToVisit(location);
-        locationsToVisit.forEach(l -> visitCell(location, l));
     }
 
     private List<Location> getLocationsToVisit(Location location) {

@@ -49,6 +49,7 @@ function gameStart(game, joinInfo) {
             for (var x = 0; x < labyrinthSize; x++) {
                 labyrinthCells[y][x].ownerMarker.targetColor.set(colors[gameState.cellsOwnerIndices[y][x]]);
                 labyrinthCells[y][x].visitableMarker.targetOpacity = gameState.cellsVisitable[y][x] ? 0.0 : 0.7;
+                labyrinthCells[y][x].visitableMarker.targetPositionZ = gameState.cellsVisitable[y][x] ? -0.3 : 0.3;
             }
         }
 
@@ -109,7 +110,8 @@ function gameStart(game, joinInfo) {
             for (var x = 0; x < labyrinthSize; x++) {
                 var lc = labyrinthCells[y][x];
                 lc.ownerMarker.material.color.lerp(lc.ownerMarker.targetColor, 0.01);
-                lc.visitableMarker.material.opacity += (lc.visitableMarker.targetOpacity - lc.visitableMarker.material.opacity) * 0.1;
+                lc.visitableMarker.material.opacity += (lc.visitableMarker.targetOpacity - lc.visitableMarker.material.opacity) * 0.03;
+                lc.visitableMarker.position.z += (lc.visitableMarker.targetPositionZ - lc.visitableMarker.position.z) * 0.03;
             }
         }
 
@@ -154,8 +156,9 @@ function gameStart(game, joinInfo) {
                 scene.add( ownerMarker );
 
                 var visitableMarker = new THREE.Mesh( new THREE.BoxBufferGeometry(0.9, 0.9, 0.6), new THREE.MeshLambertMaterial( { color: 0x777777, transparent: true, opacity: 0.0}  ))
-                visitableMarker.position.set(-halfLabyrinthSize + x + 0.5, -halfLabyrinthSize + y + 0.5, 0.3);
+                visitableMarker.position.set(-halfLabyrinthSize + x + 0.5, -halfLabyrinthSize + y + 0.5, -0.3);
                 visitableMarker.targetOpacity = 0.0;
+                visitableMarker.targetPositionZ = -0.3;
                 scene.add( visitableMarker );
 
                 labyrinthCells[y].push({
@@ -206,8 +209,8 @@ function gameStart(game, joinInfo) {
     }
 
     function onDocumentMouseMove( event ) {
-        mouseX = ( event.clientX - windowHalfX ) / 200.0;
-        mouseY = ( event.clientY - windowHalfY ) / 200.0;
+        mouseX = ( event.clientX - windowHalfX ) / 400.0;
+        mouseY = ( event.clientY - windowHalfY ) / 400.0;
     }
 
     function onDocumentMouseLeave( event ) {
