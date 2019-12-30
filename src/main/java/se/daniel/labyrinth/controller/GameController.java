@@ -62,7 +62,7 @@ public class GameController {
         gameEndedOpt.ifPresent(gameEnded -> messagingTemplate.convertAndSend("/topic/game-ended/" + gameUuid, gameEnded));
     }
 
-    @Scheduled(fixedRate = 1000)
+    @Scheduled(fixedRate = 10000)
     private void removeTimedOutGameRequests() {
         gameService.removeTimedOutGameRequests().forEach(
                 gameUuid -> messagingTemplate.convertAndSend("/topic/game-request-aborted/" + gameUuid, "")
