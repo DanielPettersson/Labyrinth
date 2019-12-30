@@ -209,8 +209,8 @@ function gameStart(game, joinInfo) {
     }
 
     function onDocumentMouseMove( event ) {
-        mouseX = ( event.clientX - windowHalfX ) / 400.0;
-        mouseY = ( event.clientY - windowHalfY ) / 400.0;
+        mouseX = ( event.clientX - windowHalfX ) / 800.0;
+        mouseY = ( event.clientY - windowHalfY ) / 800.0;
     }
 
     function onDocumentMouseLeave( event ) {

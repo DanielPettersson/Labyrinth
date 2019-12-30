@@ -31,7 +31,8 @@ public class GameServiceImpl implements GameService {
 
         Assert.isTrue(numPlayers >= 2, "Has to be at least one player");
         Assert.isTrue(numPlayers <= 4, "Max four players supported");
-        Assert.isTrue(gameSpecification.getGameSize() > 1, "Game has to have a size");
+        Assert.isTrue(gameSpecification.getGameSize() >= 2, "Too small game size");
+        Assert.isTrue(gameSpecification.getGameSize() <= 10, "Too large game size");
 
         final GameRequest gameRequest = gameRequests.computeIfAbsent(gameSpecification, n -> new GameRequest());
         final UUID playerUuid = gameRequest.addPlayer();

@@ -12,6 +12,11 @@ function connect() {
 
     stompClient.connect({}, function (frame) {
         joinButton.removeAttribute('disabled');
+
+        stompClient.subscribe('/user/topic/error', function (message) {
+            formDiv.style.display = 'none';
+            gameArea.innerText = message.body;
+        });
     });
 }
 

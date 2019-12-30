@@ -2,6 +2,7 @@ package se.daniel.labyrinth.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
@@ -66,6 +67,12 @@ public class GameController {
         gameService.removeTimedOutGameRequests().forEach(
                 gameUuid -> messagingTemplate.convertAndSend("/topic/game-request-aborted/" + gameUuid, "")
         );
+    }
+
+    @MessageExceptionHandler
+    @SendToUser("/topic/error")
+    public String handleException(Exception e) {
+        return e.getMessage();
     }
 
 }
