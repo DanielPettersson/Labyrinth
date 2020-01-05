@@ -1,4 +1,4 @@
-function gameStart(game, joinInfo) {
+function gameStart(game, joinInfo, gameClient) {
 
     gameArea.innerText = '';
 
@@ -41,54 +41,9 @@ function gameStart(game, joinInfo) {
     var players = createPlayers(game.players);
     positionPlayers(players, game.players);
 
-    stompClient.subscribe('/topic/player-moved/' + game.uuid + '/' + joinInfo.playerUuid, function (message) {
-        var gameState = JSON.parse(message.body);
-        positionPlayers(players, gameState.players);
-
-        for (var y = 0; y < labyrinthSize; y++) {
-            for (var x = 0; x < labyrinthSize; x++) {
-                labyrinthCells[y][x].ownerMarker.targetColor.set(colors[gameState.cellsOwnerIndices[y][x]]);
-                labyrinthCells[y][x].visitableMarker.targetOpacity = gameState.cellsVisitable[y][x] ? 0.0 : 0.7;
-                labyrinthCells[y][x].visitableMarker.targetPositionZ = gameState.cellsVisitable[y][x] ? -0.3 : 0.3;
-            }
-        }
-
-    });
-
-    stompClient.subscribe('/topic/game-ended/' + game.uuid, function (message) {
-        canMove = false;
-
-        var gameEnded = JSON.parse(message.body);
-
-        new THREE.FontLoader().load( 'fonts/helvetiker_regular.typeface.json', function ( font ) {
-
-            for (var i = 0; i < gameEnded.players.length; i++) {
-
-                var playerPoints = gameEnded.points[i];
-                var playerLocation = gameEnded.players[i].location;
-
-                var pointsGeo = new THREE.TextBufferGeometry('' + playerPoints, { font: font, size: 0.5, height: 0.2 });
-                pointsGeo.computeBoundingBox();
-                var textWidth = pointsGeo.boundingBox.max.x - pointsGeo.boundingBox.min.x;
-                var pointsMesh = new THREE.Mesh(pointsGeo, new THREE.MeshLambertMaterial( { color: 0xeeeeee } ));
-                pointsMesh.position.set(-halfLabyrinthSize + playerLocation.x + 0.5 - textWidth * 0.5, -halfLabyrinthSize + playerLocation.y + 0.2, 0.6);
-                scene.add(pointsMesh);
-
-            }
-
-
-        }, function (xhr) {
-            console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
-        }, function (err) {
-            console.log(err);
-        });
-
-
-    });
-
     function doMove(move) {
         if (move && canMove) {
-            stompClient.send('/app/move-player/' + game.uuid + '/' + joinInfo.playerUuid, {}, JSON.stringify(move));
+            gameClient.move(game.uuid, move);
         }
     }
 
@@ -297,5 +252,52 @@ function gameStart(game, joinInfo) {
         }
     }
 
+    var onGameState = function(gameState) {
+        positionPlayers(players, gameState.players);
+
+        for (var y = 0; y < labyrinthSize; y++) {
+            for (var x = 0; x < labyrinthSize; x++) {
+                labyrinthCells[y][x].ownerMarker.targetColor.set(colors[gameState.cellsOwnerIndices[y][x]]);
+                labyrinthCells[y][x].visitableMarker.targetOpacity = gameState.cellsVisitable[y][x] ? 0.0 : 0.7;
+                labyrinthCells[y][x].visitableMarker.targetPositionZ = gameState.cellsVisitable[y][x] ? -0.3 : 0.3;
+            }
+        }
+    };
+
+    var onGameEnded = function(gameEnded) {
+
+        canMove = false;
+
+        new THREE.FontLoader().load( 'fonts/helvetiker_regular.typeface.json', function ( font ) {
+
+            for (var i = 0; i < gameEnded.players.length; i++) {
+
+                var playerPoints = gameEnded.points[i];
+                var playerLocation = gameEnded.players[i].location;
+
+                var pointsGeo = new THREE.TextBufferGeometry('' + playerPoints, { font: font, size: 0.5, height: 0.2 });
+                pointsGeo.computeBoundingBox();
+                var textWidth = pointsGeo.boundingBox.max.x - pointsGeo.boundingBox.min.x;
+                var pointsMesh = new THREE.Mesh(pointsGeo, new THREE.MeshLambertMaterial( { color: 0xeeeeee } ));
+                pointsMesh.position.set(-halfLabyrinthSize + playerLocation.x + 0.5 - textWidth * 0.5, -halfLabyrinthSize + playerLocation.y + 0.2, 0.6);
+                scene.add(pointsMesh);
+
+            }
+
+
+        }, function (xhr) {
+            console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+        }, function (err) {
+            console.log(err);
+        });
+
+    };
+
+    return {
+        onGameState: onGameState,
+        onGameEnded: onGameEnded
+    };
+
 }
+
 

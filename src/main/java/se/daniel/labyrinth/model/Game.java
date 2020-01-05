@@ -1,6 +1,7 @@
 package se.daniel.labyrinth.model;
 
 
+import io.javalin.websocket.WsContext;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -36,8 +37,8 @@ public class Game {
 
     }
 
-    public Player getPlayerByUUid(UUID uuid) {
-        return players.stream().filter(p -> uuid.equals(p.getUuid())).findFirst().orElseThrow();
+    public Player getPlayerWsContext(WsContext wsContext) {
+        return players.stream().filter(p -> wsContext.equals(p.getWsContext())).findFirst().orElseThrow();
     }
 
 }

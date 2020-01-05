@@ -1,19 +1,22 @@
 package se.daniel.labyrinth.service.impl;
 
+import io.javalin.websocket.WsContext;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 import se.daniel.labyrinth.model.*;
 import se.daniel.labyrinth.service.GameService;
 import se.daniel.labyrinth.util.Assert;
 import se.daniel.labyrinth.util.LabyrinthBuilder;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.stream.Collectors.toList;
 
+@Slf4j
 public class GameServiceImpl implements GameService {
 
     private static final int GAME_REQUEST_TTL_SECONDS = 30;
@@ -23,7 +26,7 @@ public class GameServiceImpl implements GameService {
     private final Map<GameSpecification, GameRequest> gameRequests = new ConcurrentHashMap<>();
 
     @Override
-    public JoinInfo joinGame(GameSpecification gameSpecification) {
+    public JoinInfo joinGame(GameSpecification gameSpecification, WsContext wsContext) {
 
         final int numPlayers = gameSpecification.getNumPlayers();
 
@@ -33,13 +36,12 @@ public class GameServiceImpl implements GameService {
         Assert.isTrue(gameSpecification.getGameSize() <= 10, "Too large game size");
 
         final GameRequest gameRequest = gameRequests.computeIfAbsent(gameSpecification, n -> new GameRequest());
-        final UUID playerUuid = gameRequest.addPlayer();
-        final Game game = gameRequest.getPlayerUuids().size() == numPlayers ? startGame(gameSpecification) : null;
+        gameRequest.addPlayer(wsContext);
+        final Game game = gameRequest.getPlayers().size() == numPlayers ? startGame(gameSpecification) : null;
 
         return new JoinInfo(
                 gameRequest.getGameUuid(),
-                playerUuid,
-                gameRequest.getPlayerUuids().size() - 1,
+                gameRequest.getPlayers().size() - 1,
                 game
         );
     }
@@ -51,13 +53,13 @@ public class GameServiceImpl implements GameService {
         final var gameRequest = gameRequests.remove(gameSpecification);
 
         var players = new ArrayList<Player>();
-        players.add(new Player(gameRequest.getPlayerUuids().get(0), new Location(0, 0)));
-        players.add(new Player(gameRequest.getPlayerUuids().get(1), new Location(gameSize - 1, gameSize - 1)));
+        players.add(new Player(gameRequest.getPlayers().get(0), new Location(0, 0)));
+        players.add(new Player(gameRequest.getPlayers().get(1), new Location(gameSize - 1, gameSize - 1)));
         if (numPlayers >= 3) {
-            players.add(new Player(gameRequest.getPlayerUuids().get(2), new Location(0, gameSize - 1)));
+            players.add(new Player(gameRequest.getPlayers().get(2), new Location(0, gameSize - 1)));
         }
         if (numPlayers == 4) {
-            players.add(new Player(gameRequest.getPlayerUuids().get(3), new Location(gameSize - 1, 0)));
+            players.add(new Player(gameRequest.getPlayers().get(3), new Location(gameSize - 1, 0)));
         }
 
         var game = new Game(
@@ -78,10 +80,10 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public boolean movePlayer(UUID gameId, UUID playerId, Location move) {
+    public boolean movePlayer(UUID gameId, Location move, WsContext wsContext) {
 
         final Game game = games.get(gameId);
-        final var player = game.getPlayerByUUid(playerId);
+        final var player = game.getPlayerWsContext(wsContext);
 
         if (game.isValidMove(player, move)) {
 
@@ -100,14 +102,34 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public List<UUID> getPlayers(UUID gameId) {
-        return games.get(gameId).getPlayers().stream().map(Player::getUuid).collect(toList());
+    public List<WsContext> getPlayerWsContexts(UUID gameId) {
+        if (games.containsKey(gameId)) {
+            return games.get(gameId).getPlayers().stream().map(Player::getWsContext).collect(toList());
+        } else {
+            return List.of();
+        }
     }
 
     @Override
-    public GameState getGameState(UUID gameId, UUID playerId) {
+    public List<Game> getGames(WsContext wsContext) {
+        return games.values()
+                .stream()
+                .filter(g -> g.getPlayers().stream().anyMatch(p -> p.getWsContext().equals(wsContext)))
+                .collect(toList());
+    }
+
+    @Override
+    public void endGame(Game game) {
+
+        games.remove(game.getUuid());
+
+        log.info("Ending game: " + game.getUuid() + ", " + games.size() + " active games");
+    }
+
+    @Override
+    public GameState getGameState(UUID gameId, WsContext wsContext) {
         final var game = games.get(gameId);
-        final var player = game.getPlayerByUUid(playerId);
+        final var player = game.getPlayerWsContext(wsContext);
         final var playerIndex = game.getPlayers().indexOf(player);
 
         final var cellOwnerIndices = game.getLabyrinth().getCells().stream().map(
@@ -141,36 +163,44 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public List<UUID> removeTimedOutGameRequests() {
-        final LocalDateTime now = LocalDateTime.now();
-        final List<GameSpecification> oldKeys = gameRequests
-                .entrySet()
+    public void removePlayerFromRequest(WsContext wsContext) {
 
+        // Remove player from game request, and the request itself if no player is left in request
+
+        this.gameRequests.entrySet()
                 .stream()
-                .filter(r -> Duration.between(r.getValue().getCreationDate(), now).getSeconds() > GAME_REQUEST_TTL_SECONDS)
-                .map(Map.Entry::getKey)
-                .collect(toList());
+                .filter(gr -> gr.getValue().getPlayers().stream().anyMatch(p -> p.equals(wsContext)))
+                .findFirst()
+                .ifPresent(gr -> {
 
-        return oldKeys.stream().map(gameRequests::remove).map(GameRequest::getGameUuid).collect(toList());
+                    gr.getValue().getPlayers().remove(wsContext);
+                    if (gr.getValue().getPlayers().size() == 0) {
+                        this.gameRequests.remove(gr.getKey());
+                    }
+
+                    log.info("Removed " + wsContext.getSessionId() + " from " + gr.getValue());
+                });
+
+        log.info(gameRequests.size() + " active game requests");
+
     }
 
     @Getter
     @EqualsAndHashCode(of = {"gameUuid"})
+    @ToString(of = {"gameUuid"})
     private static class GameRequest {
 
         private final LocalDateTime creationDate;
         private final UUID gameUuid;
-        private final List<UUID> playerUuids = new ArrayList<>();
+        private final List<WsContext> players = new ArrayList<>();
 
         GameRequest() {
             this.gameUuid = UUID.randomUUID();
             this.creationDate = LocalDateTime.now();
         }
 
-        UUID addPlayer() {
-            final UUID uuid = UUID.randomUUID();
-            playerUuids.add(uuid);
-            return uuid;
+        void addPlayer(final WsContext wsContext) {
+            players.add(wsContext);
         }
 
     }

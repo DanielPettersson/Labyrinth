@@ -10,7 +10,6 @@ import java.util.UUID;
 public class JoinInfo {
 
     private final UUID gameUuid;
-    private final UUID playerUuid;
     private final int playerIndex;
 
     private final Game game;

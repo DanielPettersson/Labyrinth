@@ -2,27 +2,28 @@ package se.daniel.labyrinth.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.javalin.websocket.WsContext;
+import io.javalin.websocket.WsMessageContext;
 import lombok.AllArgsConstructor;
 
 import java.util.Map;
-import java.util.function.BiConsumer;
 
 @AllArgsConstructor
 public class MessageHandler {
 
     private final ObjectMapper mapper = new ObjectMapper();
-    private final Map<String, BiConsumer<ObjectMapper, String>> messageMap;
+    private final Map<String, MessageConsumer> messageMap;
 
-    public void dispatch(final String message) {
+    public void dispatch(final WsMessageContext wsContext) {
         try {
-            final var root = mapper.readValue(message, Map.class);
+            final var root = mapper.readTree(wsContext.message());
 
-            final String command = (String) root.get("command");
-            final String content = (String) root.get("content");
+            final String command = root.get("command").asText();
+            final String content = root.get("content").toString();
 
             if (messageMap.containsKey(command)) {
 
-                messageMap.get(command).accept(mapper, content);
+                messageMap.get(command).accept(mapper, content, wsContext);
 
             } else {
                 throw new IllegalStateException("unknown command: " + command);
@@ -36,17 +37,7 @@ public class MessageHandler {
     @FunctionalInterface
     public interface MessageConsumer {
 
-        void accept(ObjectMapper mapper, String mesage) throws JsonProcessingException;
-
-        static BiConsumer<ObjectMapper, String> toMessageConsumer(final MessageConsumer messageConsumer) {
-            return (mapper, message) -> {
-                try {
-                    messageConsumer.accept(mapper, message);
-                } catch (Exception e) {
-                    throw new IllegalStateException(e);
-                }
-            };
-        }
+        void accept(ObjectMapper mapper, String mesage, WsContext context) throws JsonProcessingException;
 
     }
 

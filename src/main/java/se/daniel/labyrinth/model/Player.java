@@ -1,11 +1,10 @@
 package se.daniel.labyrinth.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.javalin.websocket.WsContext;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -13,7 +12,7 @@ import java.util.UUID;
 public class Player {
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    private final UUID uuid;
+    private final WsContext wsContext;
 
     private Location location;
 }

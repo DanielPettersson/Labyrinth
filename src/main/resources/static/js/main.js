@@ -1,4 +1,8 @@
-var stompClient;
+var gameClient;
+var joinInfo;
+var onGameState;
+var onGameEnded;
+var joinTimeout;
 var joinButton = document.getElementById('joinButton');
 var gameArea = document.getElementById('gameArea');
 var numPlayersSelect = document.getElementById('numPlayers');
@@ -7,26 +11,46 @@ var formDiv = document.getElementById('formDiv');
 
 function connect() {
 
-    socket = new WebSocket('ws://' + location.host + '/ws');
-
-    socket.addEventListener('open', function (event) {
-        joinButton.removeAttribute('disabled');
-    });
-
-    socket.addEventListener('message', function (event) {
-
-    });
-
-    /*
-    stompClient.connect({}, function (frame) {
-
-
-        stompClient.subscribe('/user/topic/error', function (message) {
+    gameClient = new GameClient(
+        function (ev) {
+            joinButton.removeAttribute('disabled');
+        },
+        function (ev) {
             formDiv.style.display = 'none';
-            gameArea.innerText = message.body;
-        });
-    });
-     */
+            gameArea.innerText = ev.data;
+        },
+        function (info) {
+            joinInfo = info;
+            if (joinInfo.game) {
+                var gs = gameStart(joinInfo.game, joinInfo, gameClient);
+                onGameState = gs.onGameState;
+                onGameEnded = gs.onGameEnded;
+            } else {
+                joinTimeout = setTimeout(function () {
+                    window.location.reload();
+                }, 5000);
+            }
+        },
+        function (game) {
+            clearTimeout(joinTimeout);
+            var gs = gameStart(game, joinInfo, gameClient);
+            onGameState = gs.onGameState;
+            onGameEnded = gs.onGameEnded;
+
+        },
+        function(aborted) {
+            formDiv.style.display = 'block';
+            gameArea.innerText = '';
+        },
+        function (gameEnded) {
+            onGameEnded.call(this, gameEnded);
+        },
+        function (gameState) {
+            onGameState.call(this, gameState);
+        }
+
+    );
+
 }
 
 joinButton.onclick = function(ev) {
@@ -36,33 +60,9 @@ joinButton.onclick = function(ev) {
         gameArea.innerText = 'Waiting for other players...';
         if (USER_IS_TOUCH) gameArea.requestFullscreen();
 
-        var gameRequestJoinedSubscription = stompClient.subscribe('/user/topic/game-joined', function (message) {
-            gameRequestJoinedSubscription.unsubscribe();
-            var joinInfo = JSON.parse(message.body);
-
-            if (joinInfo.game) {
-                gameStart(joinInfo.game, joinInfo);
-            } else {
-
-                var gameAbortedSubscription = stompClient.subscribe('/topic/game-request-aborted/' + joinInfo.gameUuid, function (message) {
-                    gameAbortedSubscription.unsubscribe();
-                    gameStartedSubscription.unsubscribe();
-                    formDiv.style.display = 'block';
-                    gameArea.innerText = '';
-                });
-
-                var gameStartedSubscription = stompClient.subscribe('/topic/game-started/' + joinInfo.gameUuid, function (message) {
-                    gameAbortedSubscription.unsubscribe();
-                    gameStartedSubscription.unsubscribe();
-                    gameStart(JSON.parse(message.body), joinInfo);
-                });
-            }
-
-        });
-
         var numPlayers = numPlayersSelect.options[numPlayersSelect.selectedIndex].value;
         var gameSize = gameSizeInput.value;
-        stompClient.send('/app/join-game', {}, JSON.stringify({ numPlayers: numPlayers, gameSize: gameSize }));
+        gameClient.join(numPlayers, gameSize)
 
     }, 200);
 };
@@ -82,3 +82,4 @@ if (!Element.prototype.requestFullscreen) {
 }
 
 connect();
+

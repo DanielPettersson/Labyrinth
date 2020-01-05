@@ -1,13 +1,13 @@
 package se.daniel.labyrinth.model;
 
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
+@Setter
 @EqualsAndHashCode
-@AllArgsConstructor
 public class GameSpecification {
-    int numPlayers;
-    int gameSize;
+    private int numPlayers;
+    private int gameSize;
 }
