@@ -28,7 +28,7 @@ function connect() {
             } else {
                 joinTimeout = setTimeout(function () {
                     window.location.reload();
-                }, 5000);
+                }, 30000);
             }
         },
         function (game) {

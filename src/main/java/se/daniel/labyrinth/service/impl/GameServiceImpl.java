@@ -19,7 +19,6 @@ import static java.util.stream.Collectors.toList;
 @Slf4j
 public class GameServiceImpl implements GameService {
 
-    private static final int GAME_REQUEST_TTL_SECONDS = 30;
     private static final List<Location> VALID_MOVES = List.of(new Location(0, 1), new Location(0, -1), new Location(1, 0), new Location(-1, 0));
 
     private final Map<UUID, Game> games = new HashMap<>();
