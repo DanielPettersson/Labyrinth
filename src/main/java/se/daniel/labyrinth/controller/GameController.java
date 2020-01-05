@@ -3,7 +3,7 @@ package se.daniel.labyrinth.controller;
 import lombok.AllArgsConstructor;
 import se.daniel.labyrinth.model.GameSpecification;
 import se.daniel.labyrinth.model.JoinInfo;
-import se.daniel.labyrinth.model.Location;
+import se.daniel.labyrinth.model.Move;
 import se.daniel.labyrinth.service.GameService;
 
 import java.util.UUID;
@@ -24,14 +24,11 @@ public class GameController {
         return joinInfo;
     }
 
-    public void movePlayer(
-            String gameId,
-            String playerId,
-            Location move) {
+    public void movePlayer(Move move) {
 
-        final var gameUuid = UUID.fromString(gameId);
+        final var gameUuid = UUID.fromString(move.getGameId());
 
-        if (gameService.movePlayer(gameUuid, UUID.fromString(playerId), move)) {
+        if (gameService.movePlayer(gameUuid, UUID.fromString(move.getPlayerId()), move.getTo())) {
 
             /*
             gameService.getPlayers(gameUuid).forEach(

@@ -7,17 +7,26 @@ var formDiv = document.getElementById('formDiv');
 
 function connect() {
 
-    var socket = new SockJS('/game');
-    stompClient = Stomp.over(socket);
+    socket = new WebSocket('ws://' + location.host + '/ws');
 
-    stompClient.connect({}, function (frame) {
+    socket.addEventListener('open', function (event) {
         joinButton.removeAttribute('disabled');
+    });
+
+    socket.addEventListener('message', function (event) {
+
+    });
+
+    /*
+    stompClient.connect({}, function (frame) {
+
 
         stompClient.subscribe('/user/topic/error', function (message) {
             formDiv.style.display = 'none';
             gameArea.innerText = message.body;
         });
     });
+     */
 }
 
 joinButton.onclick = function(ev) {
