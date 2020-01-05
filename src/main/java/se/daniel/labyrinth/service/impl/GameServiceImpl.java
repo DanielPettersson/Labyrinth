@@ -2,10 +2,9 @@ package se.daniel.labyrinth.service.impl;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
 import se.daniel.labyrinth.model.*;
 import se.daniel.labyrinth.service.GameService;
+import se.daniel.labyrinth.util.Assert;
 import se.daniel.labyrinth.util.LabyrinthBuilder;
 
 import java.time.Duration;
@@ -15,7 +14,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.stream.Collectors.toList;
 
-@Service
 public class GameServiceImpl implements GameService {
 
     private static final int GAME_REQUEST_TTL_SECONDS = 30;
