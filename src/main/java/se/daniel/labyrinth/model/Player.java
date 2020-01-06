@@ -1,7 +1,6 @@
 package se.daniel.labyrinth.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.javalin.websocket.WsContext;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,7 +11,7 @@ import lombok.Setter;
 public class Player {
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    private final WsContext wsContext;
+    private final String id;
 
     private Location location;
 }

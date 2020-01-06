@@ -1,43 +1,31 @@
 package se.daniel.labyrinth;
 
 import io.javalin.Javalin;
-import se.daniel.labyrinth.controller.GameController;
-import se.daniel.labyrinth.controller.MessageHandler;
-import se.daniel.labyrinth.model.GameSpecification;
-import se.daniel.labyrinth.model.Move;
-import se.daniel.labyrinth.service.impl.GameServiceImpl;
+import lombok.extern.slf4j.Slf4j;
+import se.daniel.labyrinth.controller.CommandHandler;
+import se.daniel.labyrinth.controller.LabyrinthController;
+import se.daniel.labyrinth.service.impl.LabyrinthEngineImpl;
 
-import java.util.Map;
-
+@Slf4j
 public class Application {
 
     public static void main(String[] args) {
 
-        final var gameService = new GameServiceImpl();
-        final var controller = new GameController(gameService);
-        final var messageHandler = new MessageHandler(Map.of(
-                "join",
-                (mapper, message, wsContext) -> {
-                    final var gameSpecification = mapper.readValue(message, GameSpecification.class);
-                    controller.joinGameRequest(gameSpecification, wsContext);
-                },
-                "move",
-                (mapper, message, wsContext) -> {
-                    final var move = mapper.readValue(message, Move.class);
-                    controller.movePlayer(move, wsContext);
-                })
-        );
+        final var labyrinthEngine = new LabyrinthEngineImpl();
+        final var commandHandler = new CommandHandler();
+        final var controller = new LabyrinthController(labyrinthEngine, commandHandler);
 
         Javalin.create(config -> {
                     config.addStaticFiles("static");
                     config.wsLogger(ws -> {
-                        ws.onConnect(ctx -> System.out.println("Connected: " + ctx.getSessionId()));
-                        ws.onClose(ctx -> System.out.println("Closed: " + ctx.getSessionId()));
-                        ws.onError(ctx -> System.out.println("Error: " + ctx.error()));
+                        ws.onConnect(ctx -> log.debug("Connected: " + ctx.getSessionId()));
+                        ws.onClose(ctx -> log.debug("Closed: " + ctx.getSessionId()));
+                        ws.onError(ctx -> log.error("Error: " + ctx.error()));
                     });
                 })
                 .ws("ws", ws -> {
-                    ws.onMessage(messageHandler::dispatch);
+                    ws.onConnect(controller::playerConnected);
+                    ws.onMessage(commandHandler::dispatch);
                     ws.onClose(controller::playerDisconnected);
                 })
                 .start(8080);

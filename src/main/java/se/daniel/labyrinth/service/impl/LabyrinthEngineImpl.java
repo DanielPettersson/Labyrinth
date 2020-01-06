@@ -1,12 +1,11 @@
 package se.daniel.labyrinth.service.impl;
 
-import io.javalin.websocket.WsContext;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import se.daniel.labyrinth.model.*;
-import se.daniel.labyrinth.service.GameService;
+import se.daniel.labyrinth.service.LabyrinthEngine;
 import se.daniel.labyrinth.util.Assert;
 import se.daniel.labyrinth.util.LabyrinthBuilder;
 
@@ -17,15 +16,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import static java.util.stream.Collectors.toList;
 
 @Slf4j
-public class GameServiceImpl implements GameService {
+public class LabyrinthEngineImpl implements LabyrinthEngine {
 
     private static final List<Location> VALID_MOVES = List.of(new Location(0, 1), new Location(0, -1), new Location(1, 0), new Location(-1, 0));
 
-    private final Map<UUID, Game> games = new HashMap<>();
+    private final Map<UUID, Game> games = new ConcurrentHashMap<>();
     private final Map<GameSpecification, GameRequest> gameRequests = new ConcurrentHashMap<>();
 
     @Override
-    public JoinInfo joinGame(GameSpecification gameSpecification, WsContext wsContext) {
+    public JoinInfo joinGame(GameSpecification gameSpecification, String playerId) {
 
         final int numPlayers = gameSpecification.getNumPlayers();
 
@@ -35,7 +34,7 @@ public class GameServiceImpl implements GameService {
         Assert.isTrue(gameSpecification.getGameSize() <= 10, "Too large game size");
 
         final GameRequest gameRequest = gameRequests.computeIfAbsent(gameSpecification, n -> new GameRequest());
-        gameRequest.addPlayer(wsContext);
+        gameRequest.addPlayer(playerId);
         final Game game = gameRequest.getPlayers().size() == numPlayers ? startGame(gameSpecification) : null;
 
         return new JoinInfo(
@@ -79,10 +78,10 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public boolean movePlayer(UUID gameId, Location move, WsContext wsContext) {
+    public boolean movePlayer(UUID gameId, Location move, String playerId) {
 
         final Game game = games.get(gameId);
-        final var player = game.getPlayerWsContext(wsContext);
+        final var player = game.getPlayerById(playerId);
 
         if (game.isValidMove(player, move)) {
 
@@ -101,19 +100,19 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public List<WsContext> getPlayerWsContexts(UUID gameId) {
+    public List<String> getPlayerIds(UUID gameId) {
         if (games.containsKey(gameId)) {
-            return games.get(gameId).getPlayers().stream().map(Player::getWsContext).collect(toList());
+            return games.get(gameId).getPlayers().stream().map(Player::getId).collect(toList());
         } else {
             return List.of();
         }
     }
 
     @Override
-    public List<Game> getGames(WsContext wsContext) {
+    public List<Game> getGames(String playerId) {
         return games.values()
                 .stream()
-                .filter(g -> g.getPlayers().stream().anyMatch(p -> p.getWsContext().equals(wsContext)))
+                .filter(g -> g.getPlayers().stream().anyMatch(p -> p.getId().equals(playerId)))
                 .collect(toList());
     }
 
@@ -126,9 +125,9 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public GameState getGameState(UUID gameId, WsContext wsContext) {
+    public GameState getGameState(UUID gameId, String playerId) {
         final var game = games.get(gameId);
-        final var player = game.getPlayerWsContext(wsContext);
+        final var player = game.getPlayerById(playerId);
         final var playerIndex = game.getPlayers().indexOf(player);
 
         final var cellOwnerIndices = game.getLabyrinth().getCells().stream().map(
@@ -162,22 +161,22 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public void removePlayerFromRequest(WsContext wsContext) {
+    public void removePlayerFromRequest(String playerId) {
 
         // Remove player from game request, and the request itself if no player is left in request
 
         this.gameRequests.entrySet()
                 .stream()
-                .filter(gr -> gr.getValue().getPlayers().stream().anyMatch(p -> p.equals(wsContext)))
+                .filter(gr -> gr.getValue().getPlayers().stream().anyMatch(p -> p.equals(playerId)))
                 .findFirst()
                 .ifPresent(gr -> {
 
-                    gr.getValue().getPlayers().remove(wsContext);
-                    if (gr.getValue().getPlayers().size() == 0) {
+                    gr.getValue().getPlayers().remove(playerId);
+                    if (gr.getValue().getPlayers().isEmpty()) {
                         this.gameRequests.remove(gr.getKey());
                     }
 
-                    log.info("Removed " + wsContext.getSessionId() + " from " + gr.getValue());
+                    log.info("Removed " + playerId + " from " + gr.getValue());
                 });
 
         log.info(gameRequests.size() + " active game requests");
@@ -191,15 +190,15 @@ public class GameServiceImpl implements GameService {
 
         private final LocalDateTime creationDate;
         private final UUID gameUuid;
-        private final List<WsContext> players = new ArrayList<>();
+        private final List<String> players = new ArrayList<>();
 
         GameRequest() {
             this.gameUuid = UUID.randomUUID();
             this.creationDate = LocalDateTime.now();
         }
 
-        void addPlayer(final WsContext wsContext) {
-            players.add(wsContext);
+        void addPlayer(final String playerId) {
+            players.add(playerId);
         }
 
     }
