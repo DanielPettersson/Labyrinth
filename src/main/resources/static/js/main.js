@@ -1,3 +1,5 @@
+/* global Element */
+
 class Main {
 
     constructor() {
@@ -59,7 +61,7 @@ class Main {
 
                 var numPlayers = numPlayersSelect.options[numPlayersSelect.selectedIndex].value;
                 var gameSize = gameSizeInput.value;
-                gameClient.join(numPlayers, gameSize)
+                gameClient.join(numPlayers, gameSize);
 
             }, 200);
         };

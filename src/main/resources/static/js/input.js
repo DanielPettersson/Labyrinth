@@ -3,36 +3,39 @@ class InputHandler {
     constructor(game) {
 
         window.addEventListener( 'resize', function() {
-            game.resize(window.innerWidth, window.innerHeight)
+            game.resize(window.innerWidth, window.innerHeight);
         }, false );
 
 
         document.addEventListener('keyup', function(keyEvent) {
 
-            var move;
-
             switch (keyEvent.key) {
                 case 'ArrowUp':
-                    move = { x: 0, y: 1};
+                    game.doMove({ x: 0, y: 1});
                     break;
                 case 'ArrowDown':
-                    move = { x: 0, y: -1};
+                    game.doMove({ x: 0, y: -1});
                     break;
                 case 'ArrowLeft':
-                    move = { x: -1, y: 0};
+                    game.doMove({ x: -1, y: 0});
                     break;
                 case 'ArrowRight':
-                    move = { x: 1, y: 0};
-            }
-            game.doMove(move);
+                    game.doMove({ x: 1, y: 0});
+                    break;
+                case ' ':
+                    game.addLight();
+                    break;
+            }            
 
         });
 
         document.addEventListener('touchstart', handleTouchStart, false);
         document.addEventListener('touchmove', handleTouchMove, false);
+        document.addEventListener('touchend', handleTouchEnd, false);
 
         var xDown = null;
         var yDown = null;
+        var moved = false;
 
         function getTouches(evt) {
             return evt.touches ||             // browser API
@@ -43,6 +46,7 @@ class InputHandler {
             var firstTouch = getTouches(evt)[0];
             xDown = firstTouch.clientX;
             yDown = firstTouch.clientY;
+            moved = false;
         }
 
         function handleTouchMove(evt) {
@@ -60,7 +64,7 @@ class InputHandler {
                 if ( xDiff > 0 ) {
                     game.doMove({ x: -1, y: 0});
                 } else {
-                    doMove({ x: 1, y: 0});
+                    game.doMove({ x: 1, y: 0});
                 }
             } else {
                 if ( yDiff > 0 ) {
@@ -72,6 +76,13 @@ class InputHandler {
 
             xDown = null;
             yDown = null;
+            moved = true;
+        }
+        
+        function handleTouchEnd(evt) {
+            if (!moved) {
+                game.addLight();
+            }
         }
 
     }

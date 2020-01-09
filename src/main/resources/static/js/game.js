@@ -1,3 +1,5 @@
+/* global THREE */
+
 class Game {
 
     constructor(gameClient, gameElement, gameData, playerIndex) {
@@ -6,14 +8,16 @@ class Game {
 
         this.gameClient = gameClient;
 
-        this.colors = [0xff0000, 0x0000ff, 0x00ff00, 0xff00ff];
+        this.colors = [0xff3333, 0x3333ff, 0x33ff33, 0xff33ff];
         let _colors = this.colors;
 
         this.canMove = true;
 
         this.gameId = gameData.uuid;
+        this.playerIndex = playerIndex;
+        let _playerIndex = playerIndex;
 
-        this.labyrinthSize = gameData["labyrinth"].size;
+        this.labyrinthSize = gameData.labyrinth.size;
         let _labyrinthSize = this.labyrinthSize;
 
         this.halfLabyrinthSize = this.labyrinthSize / 2;
@@ -25,24 +29,32 @@ class Game {
         this.camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
         let zoomOutFactor = Math.max(1, (window.innerHeight / window.innerWidth) * 0.8);
         this.camera.position.z = this.labyrinthSize * zoomOutFactor;
+        this.camera.position.y = -0.25;
+        this.camera.position.x = -0.25;
         let _camera = this.camera;
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer.shadowMap.enabled = true;
         this.renderer.setSize( window.innerWidth, window.innerHeight );
-        this.renderer.setClearColor(this.colors[playerIndex], 1);
         let _renderer = this.renderer;
 
         gameElement.appendChild( this.renderer.domElement );
 
         // Setup lights
 
-        var light1 = new THREE.PointLight( 0xffffff, 1, 100 );
-        light1.position.set( this.labyrinthSize, this.labyrinthSize, this.labyrinthSize );
-        this.scene.add( light1 );
+        this.lights = [];
+        
+        this.mainLight1 = new THREE.PointLight( 0xffffff, 2, 100, 0);
+        this.mainLight1.position.set(_halfLabyrinthSize, _halfLabyrinthSize, _labyrinthSize);
+        this.mainLight1.power = 1.0;
+        this.scene.add( this.mainLight1 );
+        let _mainLight1 = this.mainLight1;
 
-        var light2 = new THREE.PointLight( 0xffffff, 1, 100 );
-        light2.position.set( this.labyrinthSize*0.5, -this.labyrinthSize*0.5, this.labyrinthSize );
-        this.scene.add( light2 );
+        this.mainLight2 = new THREE.PointLight( 0xffffff, 2, 100, 0);
+        this.mainLight2.position.set(-_halfLabyrinthSize, -_halfLabyrinthSize, _labyrinthSize);
+        this.mainLight2.power = 1.0;
+        this.scene.add( this.mainLight2 );
+        let _mainLight2 = this.mainLight2;
 
         // Setup players
 
@@ -52,16 +64,36 @@ class Game {
 
         function createPlayers(playersData) {
             var players = [];
-            for (var i in playersData) players.push(createPlayer(playersData[i], i));
+            for (var i in playersData) players.push(createPlayer(playersData[i], parseInt(i)));
             return players;
         }
 
         function createPlayer(playerData, playerIndex) {
-            var player = new THREE.Mesh( new THREE.SphereBufferGeometry(0.4, 20, 20), new THREE.MeshLambertMaterial( { color: _colors[playerIndex] } ) );
-            player.targetPosition = new THREE.Vector3();
-            player.position.set(0, 0, _labyrinthSize);
-            _scene.add(player);
-            return player;
+            
+            var group = new THREE.Group();
+            group.targetPosition = new THREE.Vector3();
+            group.position.set(0, 0, _labyrinthSize);
+            
+            var player = new THREE.Mesh( new THREE.TorusKnotBufferGeometry(0.20, 0.05), new THREE.MeshStandardMaterial( { color: _colors[playerIndex] } ) );
+            player.receiveShadow = true;
+            player.castShadow = true;            
+            group.add(player);
+            
+            if (_playerIndex === playerIndex) {
+                var playerLight = new THREE.PointLight( 0xffffff, 1, 4, 2 );
+                playerLight.position.set(0, 0, 0.3);
+                playerLight.castShadow = true;
+                playerLight.shadow.mapSize.width = 512;  // default
+                playerLight.shadow.mapSize.height = 512; // default
+                playerLight.shadow.camera.near = 0.1;
+                playerLight.shadow.camera.far = 5;
+                _scene.add( playerLight );
+                group.add(playerLight)
+            }
+            
+            _scene.add(group);
+            
+            return group;
         }
 
         // Setup labyrinth model
@@ -71,27 +103,32 @@ class Game {
 
         function createLabyrinthModel() {
 
-            var labyrinthWallMaterial = new THREE.MeshLambertMaterial( { color: 0xFFFF00 } );
+            var labyrinthWallMaterial = new THREE.MeshStandardMaterial( { color: 0xFFFF00 } );
 
-            var labyrinthPlane = new THREE.Mesh( new THREE.PlaneBufferGeometry(_labyrinthSize, _labyrinthSize), new THREE.MeshLambertMaterial( { color: 0x999999 } ));
+            var labyrinthPlane = new THREE.Mesh( new THREE.PlaneBufferGeometry(_labyrinthSize, _labyrinthSize), new THREE.MeshStandardMaterial( { color: 0x999999 } ));
+            labyrinthPlane.receiveShadow = true;
             _scene.add(labyrinthPlane);
 
             var northLabyrinthWall = new THREE.Mesh( new THREE.BoxBufferGeometry( _labyrinthSize, 0.1, 0.5 ), labyrinthWallMaterial );
             northLabyrinthWall.position.set(0, -_halfLabyrinthSize, 0.24);
+            northLabyrinthWall.receiveShadow = true;
             _scene.add( northLabyrinthWall );
 
             var eastLabyrinthWall = new THREE.Mesh( new THREE.BoxBufferGeometry( 0.1, _labyrinthSize, 0.5 ), labyrinthWallMaterial );
             eastLabyrinthWall.position.set(_halfLabyrinthSize, 0, 0.24);
+            eastLabyrinthWall.receiveShadow = true;
             _scene.add( eastLabyrinthWall );
 
             var southLabyrinthWall = new THREE.Mesh( new THREE.BoxBufferGeometry( _labyrinthSize, 0.1, 0.5 ), labyrinthWallMaterial );
             southLabyrinthWall.position.set(0, _halfLabyrinthSize, 0.24);
+            southLabyrinthWall.receiveShadow = true;
             _scene.add( southLabyrinthWall );
 
             var westLabyrinthWall = new THREE.Mesh( new THREE.BoxBufferGeometry( 0.1, _labyrinthSize, 0.5 ), labyrinthWallMaterial );
             westLabyrinthWall.position.set(-_halfLabyrinthSize, 0, 0.24);
+            westLabyrinthWall.receiveShadow = true;
             _scene.add( westLabyrinthWall );
-
+            
             var labyrinthCells = [];
 
             for (var y = 0; y < _labyrinthSize; y++) {
@@ -100,19 +137,21 @@ class Game {
 
                 for (var x = 0; x < _labyrinthSize; x++) {
 
-                    var ownerMarker = new THREE.Mesh( new THREE.CircleGeometry(0.3, 10), new THREE.MeshLambertMaterial( { color: 0x999999 } ));
+                    var ownerMarker = new THREE.Mesh( new THREE.CircleGeometry(0.3, 16), new THREE.MeshStandardMaterial( { color: 0x999999 } ));
                     ownerMarker.position.set(-_halfLabyrinthSize + x + 0.5, -_halfLabyrinthSize + y + 0.5, 0.01);
+                    ownerMarker.receiveShadow = true;
                     ownerMarker.targetColor = new THREE.Color(0x999999);
                     _scene.add( ownerMarker );
-
-                    var visitableMarker = new THREE.Mesh( new THREE.BoxBufferGeometry(0.9, 0.9, 0.6), new THREE.MeshLambertMaterial( { color: 0x777777, transparent: true, opacity: 0.0}  ))
+   
+                    var visitableMarker = new THREE.Mesh( new THREE.BoxBufferGeometry(0.9, 0.9, 0.6), new THREE.MeshStandardMaterial({ color: 0x777777, transparent: true, opacity: 0.0}));
                     visitableMarker.position.set(-_halfLabyrinthSize + x + 0.5, -_halfLabyrinthSize + y + 0.5, -0.3);
+                    visitableMarker.receiveShadow = true;
                     visitableMarker.targetOpacity = 0.0;
                     visitableMarker.targetPositionZ = -0.3;
                     _scene.add( visitableMarker );
 
                     labyrinthCells[y].push({
-                        ownerMarker: ownerMarker,
+                       ownerMarker: ownerMarker,
                         visitableMarker: visitableMarker
                     });
 
@@ -121,12 +160,16 @@ class Game {
                     if (cell.walls[0] && y !== 0) {
                         var northCellWall = new THREE.Mesh( new THREE.BoxBufferGeometry( 1, 0.1, 0.5 ), labyrinthWallMaterial );
                         northCellWall.position.set(-_halfLabyrinthSize + x + 0.5, -_halfLabyrinthSize + y, 0.24);
+                        northCellWall.receiveShadow = true;
+                        northCellWall.castShadow = true;
                         _scene.add( northCellWall );
                     }
 
                     if (cell.walls[3] && x !== 0) {
                         var westCellWall = new THREE.Mesh( new THREE.BoxBufferGeometry( 0.1, 1, 0.5 ), labyrinthWallMaterial );
                         westCellWall.position.set(-_halfLabyrinthSize + x, -_halfLabyrinthSize + y + 0.5, 0.24);
+                        westCellWall.receiveShadow = true;
+                        westCellWall.castShadow = true;
                         _scene.add( westCellWall );
                     }
 
@@ -137,6 +180,8 @@ class Game {
         }
 
         // Start game loop
+        
+        let _this = this;
 
         function animate() {
             requestAnimationFrame( animate );
@@ -146,6 +191,7 @@ class Game {
             _players.forEach(function(player) {
                 var move = player.targetPosition.clone().sub(player.position).multiplyScalar(0.12);
                 player.position.copy(player.position.add(move));
+                player.rotation.z -= 0.02;
             });
 
             for (var y = 0; y < _labyrinthSize; y++) {
@@ -155,6 +201,20 @@ class Game {
                     lc.visitableMarker.material.opacity += (lc.visitableMarker.targetOpacity - lc.visitableMarker.material.opacity) * 0.03;
                     lc.visitableMarker.position.z += (lc.visitableMarker.targetPositionZ - lc.visitableMarker.position.z) * 0.03;
                 }
+            }
+            
+            if (_this.canMove && _mainLight1.power > 0) {
+                _mainLight1.power -= 0.01; 
+            }
+            if (_this.canMove && _mainLight2.power > 0) {
+                _mainLight2.power -= 0.01; 
+            }
+            
+            if (!_this.canMove && _mainLight1.power < 1) {
+                _mainLight1.power += 0.01; 
+            }
+            if (!_this.canMove && _mainLight2.power < 1) {
+                _mainLight2.power += 0.01; 
             }
 
             _renderer.render( _scene, _camera );
@@ -168,7 +228,23 @@ class Game {
 
     }
 
-
+    addLight() {
+        
+        if (this.lights.length < 10) {
+         
+            var playerLight = new THREE.PointLight( this.colors[this.playerIndex], 1, 4, 2 );
+            playerLight.position.copy(this.players[this.playerIndex].targetPosition.clone())
+            playerLight.position.z = 0.35;
+            playerLight.castShadow = true;
+            playerLight.shadow.mapSize.width = 512;  // default
+            playerLight.shadow.mapSize.height = 512; // default
+            playerLight.shadow.camera.near = 0.1;
+            playerLight.shadow.camera.far = 5;
+            this.scene.add( playerLight );
+            this.lights.push(playerLight)
+            
+        }        
+    }
 
     doMove(move) {
         if (move && this.canMove) {
@@ -183,7 +259,7 @@ class Game {
             for (var x = 0; x < this.labyrinthSize; x++) {
                 this.labyrinthCells[y][x].ownerMarker.targetColor.set(this.colors[gameState.cellsOwnerIndices[y][x]]);
                 this.labyrinthCells[y][x].visitableMarker.targetOpacity = gameState.cellsVisitable[y][x] ? 0.0 : 0.7;
-                this.labyrinthCells[y][x].visitableMarker.targetPositionZ = gameState.cellsVisitable[y][x] ? -0.3 : 0.3;
+                this.labyrinthCells[y][x].visitableMarker.targetPositionZ = gameState.cellsVisitable[y][x] ? -0.1 : 0.1;
             }
         }
     }
