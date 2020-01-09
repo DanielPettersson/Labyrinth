@@ -1,272 +1,198 @@
-function gameStart(game, joinInfo, gameClient) {
+class Game {
 
-    gameArea.innerText = '';
+    constructor(gameClient, gameElement, gameData, playerIndex) {
 
-    var WIDTH = window.innerWidth;
-    var HEIGHT = window.innerHeight;
-    var windowHalfX = WIDTH / 2;
-    var windowHalfY = HEIGHT / 2;
-    var mouseX = 0, mouseY = 0;
-    var colors = [0xff0000, 0x0000ff, 0x00ff00, 0xff00ff];
-    var canMove = true;
+        // Initialize members
 
-    document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-    document.addEventListener( 'mouseleave', onDocumentMouseLeave, false );
-    window.addEventListener( 'resize', onWindowResize, false );
+        this.gameClient = gameClient;
 
-    var labyrinthSize = game.labyrinth.size;
-    var halfLabyrinthSize = labyrinthSize / 2;
+        this.colors = [0xff0000, 0x0000ff, 0x00ff00, 0xff00ff];
+        let _colors = this.colors;
 
-    var scene = new THREE.Scene();
-    var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+        this.canMove = true;
 
-    var zoomOutFactor = Math.max(1, (window.innerHeight / window.innerWidth) * 0.8);
-    camera.position.z = labyrinthSize * zoomOutFactor;
+        this.gameId = gameData.uuid;
 
-    var renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize( window.innerWidth, window.innerHeight );
-    renderer.setClearColor(colors[joinInfo.playerIndex], 1);
-    gameArea.appendChild( renderer.domElement );
+        this.labyrinthSize = gameData["labyrinth"].size;
+        let _labyrinthSize = this.labyrinthSize;
 
-    var light1 = new THREE.PointLight( 0xffffff, 1, 100 );
-    light1.position.set( labyrinthSize, labyrinthSize, labyrinthSize );
-    scene.add( light1 );
+        this.halfLabyrinthSize = this.labyrinthSize / 2;
+        let _halfLabyrinthSize =  this.halfLabyrinthSize;
 
-    var light2 = new THREE.PointLight( 0xffffff, 1, 100 );
-    light2.position.set( labyrinthSize*0.5, -labyrinthSize*0.5, labyrinthSize );
-    scene.add( light2 );
+        this.scene = new THREE.Scene();
+        let _scene = this.scene;
 
-    var labyrinthCells = createLabyrinthModel();
+        this.camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+        let zoomOutFactor = Math.max(1, (window.innerHeight / window.innerWidth) * 0.8);
+        this.camera.position.z = this.labyrinthSize * zoomOutFactor;
+        let _camera = this.camera;
 
-    var players = createPlayers(game.players);
-    positionPlayers(players, game.players);
+        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer.setSize( window.innerWidth, window.innerHeight );
+        this.renderer.setClearColor(this.colors[playerIndex], 1);
+        let _renderer = this.renderer;
 
-    function doMove(move) {
-        if (move && canMove) {
-            gameClient.move(game.uuid, move);
-        }
-    }
+        gameElement.appendChild( this.renderer.domElement );
 
-    handleInput();
+        // Setup lights
 
-    function animate() {
-        requestAnimationFrame( animate );
+        var light1 = new THREE.PointLight( 0xffffff, 1, 100 );
+        light1.position.set( this.labyrinthSize, this.labyrinthSize, this.labyrinthSize );
+        this.scene.add( light1 );
 
-        camera.position.x += ( - mouseX - camera.position.x ) * .05;
-        camera.position.y += ( - mouseY - camera.position.y ) * .05;
-        camera.lookAt( scene.position );
+        var light2 = new THREE.PointLight( 0xffffff, 1, 100 );
+        light2.position.set( this.labyrinthSize*0.5, -this.labyrinthSize*0.5, this.labyrinthSize );
+        this.scene.add( light2 );
 
-        players.forEach(function(player) {
-           var move = player.targetPosition.clone().sub(player.position).multiplyScalar(0.12);
-           player.position.copy(player.position.add(move));
-        });
+        // Setup players
 
-        for (var y = 0; y < labyrinthSize; y++) {
-            for (var x = 0; x < labyrinthSize; x++) {
-                var lc = labyrinthCells[y][x];
-                lc.ownerMarker.material.color.lerp(lc.ownerMarker.targetColor, 0.01);
-                lc.visitableMarker.material.opacity += (lc.visitableMarker.targetOpacity - lc.visitableMarker.material.opacity) * 0.03;
-                lc.visitableMarker.position.z += (lc.visitableMarker.targetPositionZ - lc.visitableMarker.position.z) * 0.03;
-            }
+        this.players = createPlayers(gameData.players);
+        this._positionPlayers(this.players, gameData.players);
+        let _players = this.players;
+
+        function createPlayers(playersData) {
+            var players = [];
+            for (var i in playersData) players.push(createPlayer(playersData[i], i));
+            return players;
         }
 
-        renderer.render( scene, camera );
-    }
-    animate();
-
-    function createLabyrinthModel() {
-
-        var labyrinthWallMaterial = new THREE.MeshLambertMaterial( { color: 0xFFFF00 } );
-
-        var labyrinthPlane = new THREE.Mesh( new THREE.PlaneBufferGeometry(labyrinthSize, labyrinthSize), new THREE.MeshLambertMaterial( { color: 0x999999 } ));
-        scene.add(labyrinthPlane);
-
-        var northLabyrinthWall = new THREE.Mesh( new THREE.BoxBufferGeometry( labyrinthSize, 0.1, 0.5 ), labyrinthWallMaterial );
-        northLabyrinthWall.position.set(0, -halfLabyrinthSize, 0.24);
-        scene.add( northLabyrinthWall );
-
-        var eastLabyrinthWall = new THREE.Mesh( new THREE.BoxBufferGeometry( 0.1, labyrinthSize, 0.5 ), labyrinthWallMaterial );
-        eastLabyrinthWall.position.set(halfLabyrinthSize, 0, 0.24);
-        scene.add( eastLabyrinthWall );
-
-        var southLabyrinthWall = new THREE.Mesh( new THREE.BoxBufferGeometry( labyrinthSize, 0.1, 0.5 ), labyrinthWallMaterial );
-        southLabyrinthWall.position.set(0, halfLabyrinthSize, 0.24);
-        scene.add( southLabyrinthWall );
-
-        var westLabyrinthWall = new THREE.Mesh( new THREE.BoxBufferGeometry( 0.1, labyrinthSize, 0.5 ), labyrinthWallMaterial );
-        westLabyrinthWall.position.set(-halfLabyrinthSize, 0, 0.24);
-        scene.add( westLabyrinthWall );
-
-        var labyrinthCells = [];
-
-        for (var y = 0; y < labyrinthSize; y++) {
-
-            labyrinthCells.push([]);
-
-            for (var x = 0; x < labyrinthSize; x++) {
-
-                var ownerMarker = new THREE.Mesh( new THREE.CircleGeometry(0.3, 10), new THREE.MeshLambertMaterial( { color: 0x999999 } ));
-                ownerMarker.position.set(-halfLabyrinthSize + x + 0.5, -halfLabyrinthSize + y + 0.5, 0.01);
-                ownerMarker.targetColor = new THREE.Color(0x999999);
-                scene.add( ownerMarker );
-
-                var visitableMarker = new THREE.Mesh( new THREE.BoxBufferGeometry(0.9, 0.9, 0.6), new THREE.MeshLambertMaterial( { color: 0x777777, transparent: true, opacity: 0.0}  ))
-                visitableMarker.position.set(-halfLabyrinthSize + x + 0.5, -halfLabyrinthSize + y + 0.5, -0.3);
-                visitableMarker.targetOpacity = 0.0;
-                visitableMarker.targetPositionZ = -0.3;
-                scene.add( visitableMarker );
-
-                labyrinthCells[y].push({
-                    ownerMarker: ownerMarker,
-                    visitableMarker: visitableMarker
-                });
-
-                var cell = game.labyrinth.cells[y][x];
-
-                if (cell.walls[0] && y !== 0) {
-                    var northCellWall = new THREE.Mesh( new THREE.BoxBufferGeometry( 1, 0.1, 0.5 ), labyrinthWallMaterial );
-                    northCellWall.position.set(-halfLabyrinthSize + x + 0.5, -halfLabyrinthSize + y, 0.24);
-                    scene.add( northCellWall );
-                }
-
-                if (cell.walls[3] && x !== 0) {
-                    var westCellWall = new THREE.Mesh( new THREE.BoxBufferGeometry( 0.1, 1, 0.5 ), labyrinthWallMaterial );
-                    westCellWall.position.set(-halfLabyrinthSize + x, -halfLabyrinthSize + y + 0.5, 0.24);
-                    scene.add( westCellWall );
-                }
-
-            }
+        function createPlayer(playerData, playerIndex) {
+            var player = new THREE.Mesh( new THREE.SphereBufferGeometry(0.4, 20, 20), new THREE.MeshLambertMaterial( { color: _colors[playerIndex] } ) );
+            player.targetPosition = new THREE.Vector3();
+            player.position.set(0, 0, _labyrinthSize);
+            _scene.add(player);
+            return player;
         }
 
-        return labyrinthCells;
-    }
+        // Setup labyrinth model
 
-    function createPlayers(playersData) {
-       var players = [];
-       for (var i in playersData) players.push(createPlayer(i, playersData[i]));
-       return players;
-    }
+        this.labyrinthCells = createLabyrinthModel();
+        let _labyrinthCells = this.labyrinthCells;
 
-    function createPlayer(playerIndex, playerData) {
-        var player = new THREE.Mesh( new THREE.SphereBufferGeometry(0.4, 20, 20), new THREE.MeshLambertMaterial( { color: colors[playerIndex] } ) );
-        player.targetPosition = new THREE.Vector3();
-        player.position.set(0, 0, labyrinthSize);
-        scene.add(player);
-        return player;
-    }
+        function createLabyrinthModel() {
 
-    function positionPlayers(players, playersData) {
-        for (var i in players) positionPlayer(players[i], playersData[i]);
-    }
+            var labyrinthWallMaterial = new THREE.MeshLambertMaterial( { color: 0xFFFF00 } );
 
-    function positionPlayer(player, playerData) {
-        player.targetPosition.set(-halfLabyrinthSize + playerData.location.x + 0.5, -halfLabyrinthSize + playerData.location.y + 0.5, 0.2);
-    }
+            var labyrinthPlane = new THREE.Mesh( new THREE.PlaneBufferGeometry(_labyrinthSize, _labyrinthSize), new THREE.MeshLambertMaterial( { color: 0x999999 } ));
+            _scene.add(labyrinthPlane);
 
-    function onDocumentMouseMove( event ) {
-        mouseX = ( event.clientX - windowHalfX ) / 800.0;
-        mouseY = ( event.clientY - windowHalfY ) / 800.0;
-    }
+            var northLabyrinthWall = new THREE.Mesh( new THREE.BoxBufferGeometry( _labyrinthSize, 0.1, 0.5 ), labyrinthWallMaterial );
+            northLabyrinthWall.position.set(0, -_halfLabyrinthSize, 0.24);
+            _scene.add( northLabyrinthWall );
 
-    function onDocumentMouseLeave( event ) {
-        mouseX = 0;
-        mouseY = 0;
-    }
+            var eastLabyrinthWall = new THREE.Mesh( new THREE.BoxBufferGeometry( 0.1, _labyrinthSize, 0.5 ), labyrinthWallMaterial );
+            eastLabyrinthWall.position.set(_halfLabyrinthSize, 0, 0.24);
+            _scene.add( eastLabyrinthWall );
 
-    function onWindowResize() {
-        WIDTH = window.innerWidth;
-        HEIGHT = window.innerHeight;
-        windowHalfX = WIDTH / 2;
-        windowHalfY = HEIGHT / 2;
-        renderer.setSize( WIDTH, HEIGHT );
-        camera.aspect = WIDTH / HEIGHT;
-        camera.updateProjectionMatrix();
-    }
+            var southLabyrinthWall = new THREE.Mesh( new THREE.BoxBufferGeometry( _labyrinthSize, 0.1, 0.5 ), labyrinthWallMaterial );
+            southLabyrinthWall.position.set(0, _halfLabyrinthSize, 0.24);
+            _scene.add( southLabyrinthWall );
 
-    function handleInput() {
-        document.addEventListener('keyup', function(keyEvent) {
+            var westLabyrinthWall = new THREE.Mesh( new THREE.BoxBufferGeometry( 0.1, _labyrinthSize, 0.5 ), labyrinthWallMaterial );
+            westLabyrinthWall.position.set(-_halfLabyrinthSize, 0, 0.24);
+            _scene.add( westLabyrinthWall );
 
-            var move;
+            var labyrinthCells = [];
 
-            switch (keyEvent.key) {
-                case 'ArrowUp':
-                    move = { x: 0, y: 1};
-                    break;
-                case 'ArrowDown':
-                    move = { x: 0, y: -1};
-                    break;
-                case 'ArrowLeft':
-                    move = { x: -1, y: 0};
-                    break;
-                case 'ArrowRight':
-                    move = { x: 1, y: 0};
-            }
-            doMove(move);
+            for (var y = 0; y < _labyrinthSize; y++) {
 
-        });
+                labyrinthCells.push([]);
 
-        document.addEventListener('touchstart', handleTouchStart, false);
-        document.addEventListener('touchmove', handleTouchMove, false);
+                for (var x = 0; x < _labyrinthSize; x++) {
 
-        var xDown = null;
-        var yDown = null;
+                    var ownerMarker = new THREE.Mesh( new THREE.CircleGeometry(0.3, 10), new THREE.MeshLambertMaterial( { color: 0x999999 } ));
+                    ownerMarker.position.set(-_halfLabyrinthSize + x + 0.5, -_halfLabyrinthSize + y + 0.5, 0.01);
+                    ownerMarker.targetColor = new THREE.Color(0x999999);
+                    _scene.add( ownerMarker );
 
-        function getTouches(evt) {
-            return evt.touches ||             // browser API
-                evt.originalEvent.touches; // jQuery
-        }
+                    var visitableMarker = new THREE.Mesh( new THREE.BoxBufferGeometry(0.9, 0.9, 0.6), new THREE.MeshLambertMaterial( { color: 0x777777, transparent: true, opacity: 0.0}  ))
+                    visitableMarker.position.set(-_halfLabyrinthSize + x + 0.5, -_halfLabyrinthSize + y + 0.5, -0.3);
+                    visitableMarker.targetOpacity = 0.0;
+                    visitableMarker.targetPositionZ = -0.3;
+                    _scene.add( visitableMarker );
 
-        function handleTouchStart(evt) {
-            var firstTouch = getTouches(evt)[0];
-            xDown = firstTouch.clientX;
-            yDown = firstTouch.clientY;
-        }
+                    labyrinthCells[y].push({
+                        ownerMarker: ownerMarker,
+                        visitableMarker: visitableMarker
+                    });
 
-        function handleTouchMove(evt) {
-            if ( ! xDown || ! yDown ) {
-                return;
-            }
+                    var cell = gameData.labyrinth.cells[y][x];
 
-            var xUp = evt.touches[0].clientX;
-            var yUp = evt.touches[0].clientY;
+                    if (cell.walls[0] && y !== 0) {
+                        var northCellWall = new THREE.Mesh( new THREE.BoxBufferGeometry( 1, 0.1, 0.5 ), labyrinthWallMaterial );
+                        northCellWall.position.set(-_halfLabyrinthSize + x + 0.5, -_halfLabyrinthSize + y, 0.24);
+                        _scene.add( northCellWall );
+                    }
 
-            var xDiff = xDown - xUp;
-            var yDiff = yDown - yUp;
+                    if (cell.walls[3] && x !== 0) {
+                        var westCellWall = new THREE.Mesh( new THREE.BoxBufferGeometry( 0.1, 1, 0.5 ), labyrinthWallMaterial );
+                        westCellWall.position.set(-_halfLabyrinthSize + x, -_halfLabyrinthSize + y + 0.5, 0.24);
+                        _scene.add( westCellWall );
+                    }
 
-            if ( Math.abs( xDiff ) > Math.abs( yDiff ) ) {
-                if ( xDiff > 0 ) {
-                    doMove({ x: -1, y: 0});
-                } else {
-                    doMove({ x: 1, y: 0});
-                }
-            } else {
-                if ( yDiff > 0 ) {
-                    doMove({ x: 0, y: 1});
-                } else {
-                    doMove({ x: 0, y: -1});
                 }
             }
 
-            xDown = null;
-            yDown = null;
+            return labyrinthCells;
+        }
+
+        // Start game loop
+
+        function animate() {
+            requestAnimationFrame( animate );
+
+            _camera.lookAt( _scene.position );
+
+            _players.forEach(function(player) {
+                var move = player.targetPosition.clone().sub(player.position).multiplyScalar(0.12);
+                player.position.copy(player.position.add(move));
+            });
+
+            for (var y = 0; y < _labyrinthSize; y++) {
+                for (var x = 0; x < _labyrinthSize; x++) {
+                    var lc = _labyrinthCells[y][x];
+                    lc.ownerMarker.material.color.lerp(lc.ownerMarker.targetColor, 0.01);
+                    lc.visitableMarker.material.opacity += (lc.visitableMarker.targetOpacity - lc.visitableMarker.material.opacity) * 0.03;
+                    lc.visitableMarker.position.z += (lc.visitableMarker.targetPositionZ - lc.visitableMarker.position.z) * 0.03;
+                }
+            }
+
+            _renderer.render( _scene, _camera );
+        }
+
+        animate();
+
+        // Setup input handler
+
+        new InputHandler(this);
+
+    }
+
+
+
+    doMove(move) {
+        if (move && this.canMove) {
+            this.gameClient.move(this.gameId, move);
         }
     }
 
-    var onGameState = function(gameState) {
-        positionPlayers(players, gameState.players);
+    setGameState(gameState) {
+        this._positionPlayers(this.players, gameState.players);
 
-        for (var y = 0; y < labyrinthSize; y++) {
-            for (var x = 0; x < labyrinthSize; x++) {
-                labyrinthCells[y][x].ownerMarker.targetColor.set(colors[gameState.cellsOwnerIndices[y][x]]);
-                labyrinthCells[y][x].visitableMarker.targetOpacity = gameState.cellsVisitable[y][x] ? 0.0 : 0.7;
-                labyrinthCells[y][x].visitableMarker.targetPositionZ = gameState.cellsVisitable[y][x] ? -0.3 : 0.3;
+        for (var y = 0; y < this.labyrinthSize; y++) {
+            for (var x = 0; x < this.labyrinthSize; x++) {
+                this.labyrinthCells[y][x].ownerMarker.targetColor.set(this.colors[gameState.cellsOwnerIndices[y][x]]);
+                this.labyrinthCells[y][x].visitableMarker.targetOpacity = gameState.cellsVisitable[y][x] ? 0.0 : 0.7;
+                this.labyrinthCells[y][x].visitableMarker.targetPositionZ = gameState.cellsVisitable[y][x] ? -0.3 : 0.3;
             }
         }
-    };
+    }
 
-    var onGameEnded = function(gameEnded) {
+    endGame(gameEnded) {
+        this.canMove = false;
 
-        canMove = false;
+        let _halfLabyrinthSize = this.halfLabyrinthSize;
+        let _scene = this.scene;
 
         new THREE.FontLoader().load( 'fonts/helvetiker_regular.typeface.json', function ( font ) {
 
@@ -279,25 +205,25 @@ function gameStart(game, joinInfo, gameClient) {
                 pointsGeo.computeBoundingBox();
                 var textWidth = pointsGeo.boundingBox.max.x - pointsGeo.boundingBox.min.x;
                 var pointsMesh = new THREE.Mesh(pointsGeo, new THREE.MeshLambertMaterial( { color: 0xeeeeee } ));
-                pointsMesh.position.set(-halfLabyrinthSize + playerLocation.x + 0.5 - textWidth * 0.5, -halfLabyrinthSize + playerLocation.y + 0.2, 0.6);
-                scene.add(pointsMesh);
+                pointsMesh.position.set(-_halfLabyrinthSize + playerLocation.x + 0.5 - textWidth * 0.5, -_halfLabyrinthSize + playerLocation.y + 0.2, 0.6);
+                _scene.add(pointsMesh);
 
             }
-
-
-        }, function (xhr) {
-            console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
-        }, function (err) {
-            console.log(err);
         });
-
     };
 
-    return {
-        onGameState: onGameState,
-        onGameEnded: onGameEnded
-    };
+    resize(width, height) {
+        this.renderer.setSize( width, height );
+        this.camera.aspect = width / height;
+        this.camera.updateProjectionMatrix();
+    }
+
+    _positionPlayers(players, playersData) {
+        for (var i in players) this._positionPlayer(players[i], playersData[i]);
+    }
+
+    _positionPlayer(player, playerData) {
+        player.targetPosition.set(-this.halfLabyrinthSize + playerData.location.x + 0.5, -this.halfLabyrinthSize + playerData.location.y + 0.5, 0.2);
+    }
 
 }
-
-

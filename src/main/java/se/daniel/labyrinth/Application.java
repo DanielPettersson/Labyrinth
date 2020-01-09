@@ -28,6 +28,7 @@ public class Application {
                     ws.onMessage(commandHandler::dispatch);
                     ws.onClose(controller::playerDisconnected);
                 })
+                .wsException(IllegalArgumentException.class, ((exception, ctx) -> commandHandler.sendCommand(ctx, "error", exception.getMessage())))
                 .start(8080);
 
     }

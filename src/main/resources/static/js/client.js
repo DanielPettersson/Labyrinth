@@ -1,5 +1,5 @@
 class GameClient {
-    constructor(onConnect, onError, onGameJoined, onGameStarted, onGameAborted, onGameEnded, onGameState) {
+    constructor(onConnect, onError, onGameJoined, onGameStarted, onGameEnded, onGameState) {
         this.socket = new WebSocket('ws://' + location.host + '/ws');
 
         this.socket.addEventListener('open', function (event) {
@@ -21,14 +21,14 @@ class GameClient {
                 case 'started':
                     onGameStarted.call(this, data.content);
                     break;
-                case 'aborted':
-                    onGameAborted.call(this, data.content);
-                    break;
                 case 'ended':
                     onGameEnded.call(this, data.content);
                     break;
                 case 'state':
                     onGameState.call(this, data.content);
+                    break;
+                case 'error':
+                    onError.call(this, data.content);
                     break;
 
             }

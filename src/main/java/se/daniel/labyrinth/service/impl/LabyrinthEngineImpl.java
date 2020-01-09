@@ -38,7 +38,6 @@ public class LabyrinthEngineImpl implements LabyrinthEngine {
         final Game game = gameRequest.getPlayers().size() == numPlayers ? startGame(gameSpecification) : null;
 
         return new JoinInfo(
-                gameRequest.getGameUuid(),
                 gameRequest.getPlayers().size() - 1,
                 game
         );
