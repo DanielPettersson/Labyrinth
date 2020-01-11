@@ -23,7 +23,7 @@ class InputHandler {
                     game.doMove({ x: 1, y: 0});
                     break;
                 case ' ':
-                    game.addLight();
+                    game.addDropLight();
                     break;
             }            
 
@@ -81,7 +81,7 @@ class InputHandler {
         
         function handleTouchEnd(evt) {
             if (!moved) {
-                game.addLight();
+                game.addDropLight();
             }
         }
 
