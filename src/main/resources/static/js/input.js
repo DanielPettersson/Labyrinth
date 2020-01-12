@@ -22,20 +22,15 @@ class InputHandler {
                 case 'ArrowRight':
                     game.doMove({ x: 1, y: 0});
                     break;
-                case ' ':
-                    game.addDropLight();
-                    break;
             }            
 
         });
 
         document.addEventListener('touchstart', handleTouchStart, false);
         document.addEventListener('touchmove', handleTouchMove, false);
-        document.addEventListener('touchend', handleTouchEnd, false);
 
         var xDown = null;
         var yDown = null;
-        var moved = false;
 
         function getTouches(evt) {
             return evt.touches ||             // browser API
@@ -46,7 +41,6 @@ class InputHandler {
             var firstTouch = getTouches(evt)[0];
             xDown = firstTouch.clientX;
             yDown = firstTouch.clientY;
-            moved = false;
         }
 
         function handleTouchMove(evt) {
@@ -76,15 +70,8 @@ class InputHandler {
 
             xDown = null;
             yDown = null;
-            moved = true;
         }
         
-        function handleTouchEnd(evt) {
-            if (!moved) {
-                game.addDropLight();
-            }
-        }
-
     }
 
 }
