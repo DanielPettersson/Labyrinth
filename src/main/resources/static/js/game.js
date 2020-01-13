@@ -4,8 +4,8 @@ class Game {
 
     constructor(gameClient, gameElement, gameData, playerIndex) {
         
-        const mainLightMaxPower = 2.0;
-        const mainLightMinPower = 0.5;
+        const mainLightMaxPower = 1.5;
+        const mainLightMinPower = 0.3;
         
         let stats = new Stats();
         stats.showPanel( 1 );
@@ -79,12 +79,11 @@ class Game {
             group.targetPosition = new THREE.Vector3();
             group.position.set(0, 0, _labyrinthSize);
             
-            var player = new THREE.Mesh( new THREE.TorusKnotBufferGeometry(0.20, 0.05), new THREE.MeshStandardMaterial( { color: _colors[playerIndex] } ) );
+            var player = new THREE.Mesh( new THREE.SphereBufferGeometry(0.25, 16, 12), new THREE.MeshStandardMaterial( { color: _colors[playerIndex], emissive: _colors[playerIndex], emissiveIntensity: 0.7  } ) );
             player.receiveShadow = true;
-            player.castShadow = true;            
             group.add(player);
             
-            var playerLight = new THREE.PointLight( _colors[playerIndex], 1.3, 5, 2 );
+            var playerLight = new THREE.PointLight( _colors[playerIndex], 1.8, 5, 2 );
             playerLight.position.set(0, 0, 0.3);
             playerLight.castShadow = true;
             playerLight.shadow.mapSize.width = 256;
