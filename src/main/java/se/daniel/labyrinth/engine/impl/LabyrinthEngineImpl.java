@@ -19,7 +19,7 @@ import static java.util.stream.Collectors.toList;
 public class LabyrinthEngineImpl implements LabyrinthEngine {
 
     private static final List<Location> VALID_MOVES = List.of(new Location(0, 1), new Location(0, -1), new Location(1, 0), new Location(-1, 0));
-
+    
     private final Map<UUID, Game> games = new ConcurrentHashMap<>();
     private final Map<GameSpecification, GameRequest> gameRequests = new ConcurrentHashMap<>();
 
@@ -83,7 +83,7 @@ public class LabyrinthEngineImpl implements LabyrinthEngine {
         final var player = game.getPlayerById(playerId);
 
         if (game.isValidMove(player, move)) {
-
+            
             final Location to = player.getLocation().add(move);
             final int ownerIndex = game.getPlayers().indexOf(player);
             game.getLabyrinth().getCell(to).playerVisit(ownerIndex);
@@ -197,13 +197,11 @@ public class LabyrinthEngineImpl implements LabyrinthEngine {
     @ToString(of = {"gameUuid"})
     private static class GameRequest {
 
-        private final LocalDateTime creationDate;
         private final UUID gameUuid;
         private final List<String> players = new ArrayList<>();
 
         GameRequest() {
             this.gameUuid = UUID.randomUUID();
-            this.creationDate = LocalDateTime.now();
         }
 
         void addPlayer(final String playerId) {

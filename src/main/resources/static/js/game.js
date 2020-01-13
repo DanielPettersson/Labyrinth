@@ -10,7 +10,7 @@ class Game {
         let stats = new Stats();
         stats.showPanel( 1 );
         document.body.appendChild( stats.dom );
-
+        
         // Initialize members
 
         this.gameClient = gameClient;

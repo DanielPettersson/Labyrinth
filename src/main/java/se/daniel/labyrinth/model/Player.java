@@ -12,6 +12,6 @@ public class Player {
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private final String id;
-
+    
     private Location location;
 }
