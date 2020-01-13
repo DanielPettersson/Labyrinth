@@ -39,5 +39,16 @@ public class Game {
     public Player getPlayerById(String playerId) {
         return players.stream().filter(p -> playerId.equals(p.getId())).findFirst().orElseThrow();
     }
+    
+    public void playerQuit(Player player) {
+        
+        final var playerIndex = getPlayers().indexOf(player);
+        
+        labyrinth.getCells()
+                .stream()
+                .flatMap(l -> l.stream())
+                .filter(c -> c.getOwnerIndex() == playerIndex)
+                .forEach(Cell::disOwn);        
+    }
 
 }

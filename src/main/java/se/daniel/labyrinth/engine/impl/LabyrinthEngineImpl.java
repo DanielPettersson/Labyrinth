@@ -1,11 +1,11 @@
-package se.daniel.labyrinth.service.impl;
+package se.daniel.labyrinth.engine.impl;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import se.daniel.labyrinth.model.*;
-import se.daniel.labyrinth.service.LabyrinthEngine;
+import se.daniel.labyrinth.engine.LabyrinthEngine;
 import se.daniel.labyrinth.util.Assert;
 import se.daniel.labyrinth.util.LabyrinthBuilder;
 
@@ -96,6 +96,16 @@ public class LabyrinthEngineImpl implements LabyrinthEngine {
             return false;
         }
 
+    }
+    
+    @Override
+    public void playerQuit(UUID gameId, String playerId) {
+        
+        final Game game = games.get(gameId);
+        final var player = game.getPlayerById(playerId);
+        
+        game.playerQuit(player);
+        
     }
 
     @Override

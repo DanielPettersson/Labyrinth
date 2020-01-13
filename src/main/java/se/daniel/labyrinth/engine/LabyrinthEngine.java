@@ -1,4 +1,4 @@
-package se.daniel.labyrinth.service;
+package se.daniel.labyrinth.engine;
 
 import se.daniel.labyrinth.model.*;
 
@@ -11,6 +11,8 @@ public interface LabyrinthEngine {
     JoinInfo joinGame(GameSpecification gameSpecification, String playerId);
 
     boolean movePlayer(UUID gameId, Location move, String playerId);
+    
+    void playerQuit(UUID gameId, String playerId);
 
     GameState getGameState(UUID gameId, String playerId);
 

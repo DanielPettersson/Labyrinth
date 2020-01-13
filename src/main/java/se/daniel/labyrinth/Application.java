@@ -4,7 +4,7 @@ import io.javalin.Javalin;
 import lombok.extern.slf4j.Slf4j;
 import se.daniel.labyrinth.controller.CommandHandler;
 import se.daniel.labyrinth.controller.LabyrinthController;
-import se.daniel.labyrinth.service.impl.LabyrinthEngineImpl;
+import se.daniel.labyrinth.engine.impl.LabyrinthEngineImpl;
 
 @Slf4j
 public class Application {

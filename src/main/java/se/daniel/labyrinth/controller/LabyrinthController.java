@@ -7,7 +7,7 @@ import se.daniel.labyrinth.model.GameEnded;
 import se.daniel.labyrinth.model.GameSpecification;
 import se.daniel.labyrinth.model.JoinInfo;
 import se.daniel.labyrinth.model.Move;
-import se.daniel.labyrinth.service.LabyrinthEngine;
+import se.daniel.labyrinth.engine.LabyrinthEngine;
 
 import java.util.Map;
 import java.util.UUID;
@@ -42,12 +42,18 @@ public class LabyrinthController {
 
         labyrinthEngine.getGames(playerId).forEach(game -> {
 
+            labyrinthEngine.playerQuit(game.getUuid(), playerId);
+            
             final var gameEnded = GameEnded.fromGame(game);
             labyrinthEngine.getPlayerIds(game.getUuid())
                     .stream()
                     .filter(p -> !p.equals(playerId))
                     .forEach(
-                            id -> commandHandler.sendCommand(players.get(id), "ended", gameEnded)
+                            id -> {
+                                final var gameState = labyrinthEngine.getGameState(game.getUuid(), id);
+                                commandHandler.sendCommand(players.get(id), "state", gameState);
+                                commandHandler.sendCommand(players.get(id), "ended", gameEnded);
+                            }
                     );
 
             labyrinthEngine.endGame(game);

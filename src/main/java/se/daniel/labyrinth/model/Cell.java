@@ -28,6 +28,10 @@ public class Cell {
         ownerIndex = playerIndex;
     }
 
+    public void disOwn() {
+        ownerIndex = -1;
+    }
+    
     public boolean canVisit(final int playerIndex) {
         return 4 - numWalls() > visitsMap.getOrDefault(playerIndex, 0);
     }
