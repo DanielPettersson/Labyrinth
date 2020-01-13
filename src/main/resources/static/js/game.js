@@ -4,7 +4,8 @@ class Game {
 
     constructor(gameClient, gameElement, gameData, playerIndex) {
         
-        const mainLightPower = 5.0;
+        const mainLightMaxPower = 2.0;
+        const mainLightMinPower = 0.5;
         
         let stats = new Stats();
         stats.showPanel( 1 );
@@ -34,8 +35,7 @@ class Game {
         this.camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
         let zoomOutFactor = Math.max(1, (window.innerHeight / window.innerWidth) * 0.8);
         this.camera.position.z = this.labyrinthSize * zoomOutFactor;
-        this.camera.position.y = -_halfLabyrinthSize * 0.75;
-        this.camera.position.x = -0.25;
+        this.camera.lookAt(this.scene.position);
         let _camera = this.camera;
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -47,18 +47,20 @@ class Game {
         
         // Setup lights
 
-        this.mainLight1 = new THREE.PointLight( 0xffffff, 2, 100, 0);
+        this.mainLight1 = new THREE.SpotLight( 0xffffff);
         this.mainLight1.position.set(_halfLabyrinthSize, _halfLabyrinthSize, _labyrinthSize);
-        this.mainLight1.power = mainLightPower;
+        this.mainLight1.castShadow = true;
+        this.mainLight1.power = mainLightMaxPower;
         this.scene.add( this.mainLight1 );
         let _mainLight1 = this.mainLight1;
-
-        this.mainLight2 = new THREE.PointLight( 0xffffff, 2, 100, 0);
+        
+        this.mainLight2 = new THREE.SpotLight( 0xffffff);
         this.mainLight2.position.set(-_halfLabyrinthSize, -_halfLabyrinthSize, _labyrinthSize);
-        this.mainLight2.power = mainLightPower;
+        this.mainLight2.castShadow = true;
+        this.mainLight2.power = mainLightMaxPower;
         this.scene.add( this.mainLight2 );
         let _mainLight2 = this.mainLight2;
-
+        
         // Setup players
 
         this.players = createPlayers(gameData.players);
@@ -107,17 +109,18 @@ class Game {
 
             let loader = new THREE.TextureLoader();
             let wallTexture = loader.load('img/wall.jpg');
-            let grassTexture = loader.load('img/grass.jpg');
-            grassTexture.wrapS = THREE.RepeatWrapping;
-            grassTexture.wrapT = THREE.RepeatWrapping;
-            grassTexture.repeat.set(_labyrinthSize, _labyrinthSize);
-            let ownerMarkerGrassTexture = loader.load('img/grass.jpg');
+            let floorTexture = loader.load('img/floor.jpg');
+            floorTexture.wrapS = THREE.RepeatWrapping;
+            floorTexture.wrapT = THREE.RepeatWrapping;
+            floorTexture.repeat.set(_halfLabyrinthSize, _halfLabyrinthSize);
+            let ownerMarkerFloorTexture = loader.load('img/floor.jpg');
+            ownerMarkerFloorTexture.repeat.set(0.25, 0.25);
             
-            var labyrinthWallMaterial = new THREE.MeshStandardMaterial( { map: wallTexture, bumpMap: wallTexture, bumpScale: 0.4 } );
+            var labyrinthWallMaterial = new THREE.MeshStandardMaterial( { map: wallTexture, metalnessMap: wallTexture } );
 
             var labyrinthPlane = new THREE.Mesh( 
                     new THREE.PlaneBufferGeometry(_labyrinthSize, _labyrinthSize), 
-                    new THREE.MeshStandardMaterial( { map: grassTexture, bumpMap: grassTexture, bumpScale: 0.2 } )
+                    new THREE.MeshStandardMaterial( { map: floorTexture, bumpMap: floorTexture, bumpScale: 0.2, metalness: 0.5 } )
             );
             labyrinthPlane.receiveShadow = true;
             _scene.add(labyrinthPlane);
@@ -159,14 +162,14 @@ class Game {
 
                 for (var x = 0; x < _labyrinthSize; x++) {
 
-                    var ownerMarker = new THREE.Mesh( new THREE.CircleGeometry(0.3, 16), new THREE.MeshStandardMaterial({color: 0x999999, transparent: true, opacity: 0.0, bumpMap: ownerMarkerGrassTexture, bumpScale: 0.2}));
+                    var ownerMarker = new THREE.Mesh( new THREE.CircleGeometry(0.3, 16), new THREE.MeshStandardMaterial({color: 0x999999, transparent: true, opacity: 0.0, bumpMap: ownerMarkerFloorTexture, bumpScale: 0.2}));
                     ownerMarker.position.set(-_halfLabyrinthSize + x + 0.5, -_halfLabyrinthSize + y + 0.5, 0.01);
                     ownerMarker.receiveShadow = true;
                     ownerMarker.targetOpacity = 0.0;
                     ownerMarker.targetColor = new THREE.Color(0x999999);
                     _scene.add( ownerMarker );
    
-                    var visitableMarker = new THREE.Mesh( new THREE.ConeBufferGeometry(0.25, 0.5), new THREE.MeshStandardMaterial({map: wallTexture, bumpMap: wallTexture, bumpScale: 0.4}));
+                    var visitableMarker = new THREE.Mesh( new THREE.ConeBufferGeometry(0.25, 0.5, 16), new THREE.MeshStandardMaterial({map: wallTexture, bumpMap: wallTexture, bumpScale: 0.4}));
                     visitableMarker.position.set(-_halfLabyrinthSize + x + 0.5, -_halfLabyrinthSize + y + 0.5, -0.5);
                     visitableMarker.rotation.x = Math.PI / 2;
                     visitableMarker.visible = false;
@@ -212,8 +215,6 @@ class Game {
             
             stats.begin();
 
-            _camera.lookAt( _scene.position );
-
             _players.forEach(function(player) {
                 var move = player.targetPosition.clone().sub(player.position).multiplyScalar(0.12);
                 player.position.copy(player.position.add(move));
@@ -229,17 +230,17 @@ class Game {
                 }
             }
             
-            if (_this.canMove && _mainLight1.power > 0) {
+            if (_this.canMove && _mainLight1.power > mainLightMinPower) {
                 _mainLight1.power -= 0.03; 
             }
-            if (_this.canMove && _mainLight2.power > 0) {
+            if (_this.canMove && _mainLight2.power > mainLightMinPower) {
                 _mainLight2.power -= 0.03; 
             }
             
-            if (!_this.canMove && _mainLight1.power < mainLightPower) {
+            if (!_this.canMove && _mainLight1.power < mainLightMaxPower) {
                 _mainLight1.power += 0.03; 
             }
-            if (!_this.canMove && _mainLight2.power < mainLightPower) {
+            if (!_this.canMove && _mainLight2.power < mainLightMaxPower) {
                 _mainLight2.power += 0.03; 
             }
 
