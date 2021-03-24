@@ -1,4 +1,4 @@
-FROM openjdk:13-alpine
+FROM openjdk:15-alpine
 MAINTAINER daniel.g.pettersson@gmail.com
 COPY target/labyrinth-0.0.1-SNAPSHOT-jar-with-dependencies.jar /opt/labyrinth/
 ENTRYPOINT ["java"]

@@ -1,6 +1,8 @@
 class GameClient {
     constructor(onConnect, onError, onGameJoined, onGameStarted, onGameEnded, onGameState) {
-        this.socket = new WebSocket('ws://' + location.host + '/ws');
+        
+        let protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        this.socket = new WebSocket(protocol + location.host + location.pathname + 'ws');
 
         this.socket.addEventListener('open', function (event) {
             onConnect.call(this, event);
